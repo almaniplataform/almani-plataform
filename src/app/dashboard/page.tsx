@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { supabase } from '../src/lib/supabase'
+import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 type Processo = {
@@ -32,7 +32,6 @@ export default function DashboardPage() {
   const [movimentacoes, setMovimentacoes] = useState<Record<string, Movimentacao[]>>({})
   const [carregando, setCarregando] = useState(true)
   const [usuario, setUsuario] = useState<string>('')
-  const [erroCarregamento, setErroCarregamento] = useState('')
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
   const router = useRouter()
 
@@ -51,18 +50,10 @@ export default function DashboardPage() {
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
-        .order('created_at', { ascending: false })
+        .order('ultima_atualizacao', { ascending: false })
 
       if (error) {
-        console.warn('Erro ao carregar processos:', {
-          message: error.message,
-          code: error.code,
-          details: error.details,
-          hint: error.hint,
-        })
-        setErroCarregamento(
-          `Não foi possível carregar os processos: ${error.message}`
-        )
+        console.error('Erro ao carregar processos:', error)
         setCarregando(false)
         return
       }
@@ -72,21 +63,11 @@ export default function DashboardPage() {
       // Buscar movimentações de cada processo
       const movs: Record<string, Movimentacao[]> = {}
       for (const p of processosData || []) {
-        const { data: movData, error: movError } = await supabase
+        const { data: movData } = await supabase
           .from('movimentacoes')
           .select('*')
           .eq('processo_id', p.id)
           .order('data', { ascending: false })
-
-        if (movError) {
-          console.warn('Erro ao carregar movimentações:', {
-            processoId: p.id,
-            message: movError.message,
-            code: movError.code,
-            details: movError.details,
-            hint: movError.hint,
-          })
-        }
 
         movs[p.id] = movData || []
       }
@@ -132,11 +113,7 @@ export default function DashboardPage() {
       <main className="max-w-6xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
 
-        {erroCarregamento ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-red-700">
-            {erroCarregamento}
-          </div>
-        ) : processos.length === 0 ? (
+        {processos.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             Você ainda não possui processos cadastrados.
           </div>
