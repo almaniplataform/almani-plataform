@@ -6,12 +6,17 @@ import { useRouter } from 'next/navigation'
 
 type Processo = {
   id: string
-  numero_processo: string
-  titulo: string
-  descricao: string | null
+  cliente_id: string
   status: string
   data_abertura: string
-  ultima_atualizacao: string
+  placa: string | null
+  uf: string | null
+  cpf_cnpj: string | null
+  tipo_servico: string | null
+  sla_meta: string | null
+  observações: string | null
+  acao_necessaria: string | null
+  created_at: string
 }
 
 type Movimentacao = {
@@ -50,7 +55,7 @@ export default function DashboardPage() {
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
-        .order('ultima_atualizacao', { ascending: false })
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Erro ao carregar processos:', error)
@@ -132,12 +137,19 @@ export default function DashboardPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-semibold text-gray-800">{processo.titulo}</h3>
+                      <h3 className="font-semibold text-gray-800">
+                        {processo.tipo_servico || 'Processo'}
+                      </h3>
                       <p className="text-sm text-gray-500 mt-1">
-                        Processo nº {processo.numero_processo}
+                        Placa: {processo.placa || 'N/A'} • {processo.uf || ''}
                       </p>
-                      {processo.descricao && (
-                        <p className="text-sm text-gray-600 mt-2">{processo.descricao}</p>
+                      {processo.cpf_cnpj && (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Documento: {processo.cpf_cnpj}
+                        </p>
+                      )}
+                      {processo.observações && (
+                        <p className="text-sm text-gray-600 mt-2">{processo.observações}</p>
                       )}
                     </div>
                     <span
@@ -151,7 +163,7 @@ export default function DashboardPage() {
                   <div className="flex gap-4 mt-3 text-xs text-gray-400">
                     <span>Aberto em: {new Date(processo.data_abertura).toLocaleDateString('pt-BR')}</span>
                     <span>
-                      Atualizado em: {new Date(processo.ultima_atualizacao).toLocaleDateString('pt-BR')}
+                      Atualizado em: {new Date(processo.created_at).toLocaleDateString('pt-BR')}
                     </span>
                   </div>
                 </div>
@@ -175,6 +187,12 @@ export default function DashboardPage() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    )}
+                    {processo.acao_necessaria && (
+                      <div className="mt-4 p-3 bg-orange-50 rounded-lg">
+                        <p className="text-sm font-medium text-orange-800">Ação necessária:</p>
+                        <p className="text-sm text-orange-700 mt-1">{processo.acao_necessaria}</p>
                       </div>
                     )}
                   </div>
