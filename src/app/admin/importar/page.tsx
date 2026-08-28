@@ -6,7 +6,7 @@ import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 function converterDataExcel(valor: any): string | null {
-  if (!valor || valor === '') return null
+  if (valor === null || valor === undefined || valor === '') return null
 
   // Se for objeto Date do JavaScript
   if (valor instanceof Date) {
@@ -28,15 +28,22 @@ function converterDataExcel(valor: any): string | null {
   }
 
   const str = String(valor).trim()
-  if (/[a-zA-Z]/.test(str)) return null
+  if (!str || str === '-' || str.toLowerCase() === 'null') return null
 
-  // Formato DD/MM/YYYY
-  const match = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
-  if (match) {
-    const [, dia, mes, ano] = match
+  // Formato DD/MM/YYYY (com ou sem hora)
+  const matchBR = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  if (matchBR) {
+    const [, dia, mes, ano] = matchBR
     const anoNum = parseInt(ano)
     if (anoNum < 1900 || anoNum > 2200) return null
     return `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`
+  }
+
+  // Formato YYYY-MM-DD (com ou sem hora, com T ou com espaço)
+  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+    const ano = parseInt(str.substring(0, 4))
+    if (ano < 1900 || ano > 2200) return null
+    return str.substring(0, 10)
   }
 
   // Formato DD/MM/YY (2 dígitos)
@@ -47,13 +54,6 @@ function converterDataExcel(valor: any): string | null {
     return `${anoNum}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`
   }
 
-  // Formato YYYY-MM-DD (já pronto, com ou sem hora)
-  if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const ano = parseInt(str.substring(0, 4))
-    if (ano < 1900 || ano > 2200) return null
-    return str.substring(0, 10)
-  }
-
   // Se for apenas números (sem barras), tentar como serial
   const num = Number(str)
   if (!isNaN(num) && num > 1 && num < 109584) {
@@ -61,6 +61,16 @@ function converterDataExcel(valor: any): string | null {
     const ano = data.getUTCFullYear()
     if (ano < 1900 || ano > 2200) return null
     return data.toISOString().split('T')[0]
+  }
+
+  // Última tentativa: usar new Date()
+  const dataFallback = new Date(str)
+  if (!isNaN(dataFallback.getTime())) {
+    const ano = dataFallback.getFullYear()
+    if (ano < 1900 || ano > 2200) return null
+    const mes = String(dataFallback.getMonth() + 1).padStart(2, '0')
+    const dia = String(dataFallback.getDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
   }
 
   return null
@@ -76,6 +86,7 @@ export default function AdminImportarPage() {
   const [arquivo, setArquivo] = useState<File | null>(null)
   const [carregando, setCarregando] = useState(false)
   const [mensagem, setMensagem] = useState('')
+  const [debugInfo, setDebugInfo] = useState('')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteSelecionado, setClienteSelecionado] = useState<string>('')
   const router = useRouter()
@@ -111,12 +122,13 @@ export default function AdminImportarPage() {
 
     setCarregando(true)
     setMensagem('')
+    setDebugInfo('')
 
     try {
       const dados = await arquivo.arrayBuffer()
       const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
       const primeiraAba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhasBrutas = XLSX.utils.sheet_to_json<Record<string, any>>(primeiraAba)
+      const linhasBrutas = XLSX.utils.sheet_to_json<Record<string, any>>(primeiraAba, { raw: false })
 
       // Normalizar nomes das colunas
       const linhasNormalizadas = linhasBrutas.map((linha) => {
@@ -127,6 +139,13 @@ export default function AdminImportarPage() {
         }
         return novaLinha
       })
+
+      // Debug: mostrar valores brutos da primeira linha
+      if (linhasNormalizadas.length > 0) {
+        const primeira = linhasNormalizadas[0]
+        const debug = `Primeira linha - data_abertura bruto: "${primeira['data_abertura']}" (tipo: ${typeof primeira['data_abertura']}) | sla_meta bruto: "${primeira['sla_meta']}" (tipo: ${typeof primeira['sla_meta']})`
+        setDebugInfo(debug)
+      }
 
       const linhasFormatadas = linhasNormalizadas.map((linha) => ({
         placa: String(linha['placa'] || '').toUpperCase().trim(),
@@ -240,6 +259,12 @@ export default function AdminImportarPage() {
             <p className={`text-sm ${mensagem.includes('Erro') ? 'text-red-600' : 'text-green-600'}`}>
               {mensagem}
             </p>
+          )}
+
+          {debugInfo && (
+            <div className="mt-2 p-3 bg-yellow-50 border border-yellow-300 rounded text-xs text-yellow-800 font-mono">
+              <strong>Debug:</strong> {debugInfo}
+            </div>
           )}
 
           <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-800">
