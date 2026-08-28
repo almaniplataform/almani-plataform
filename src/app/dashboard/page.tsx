@@ -116,7 +116,7 @@ export default function DashboardPage() {
             <img
               src="/almani-logo.png"
               alt="Almani - Simple Process"
-              className="h-12 w-auto"
+              className="h-16 w-auto"
             />
           </div>
 
@@ -230,7 +230,7 @@ export default function DashboardPage() {
           <img
             src="/almani-logo.png"
             alt="Almani - Simple Process"
-            className="h-8 w-auto inline-block opacity-40"
+            className="h-12 w-auto inline-block opacity-40"
           />
         </footer>
       </main>
