@@ -10,14 +10,11 @@ function converterDataExcel(valor: any): string | null {
 
   // Se for número (serial do Excel)
   if (typeof valor === 'number') {
-    // Validar se está num range razoável (entre 1900-01-01 e 2200-12-31)
-    // Serial de 1900-01-01 = 1, serial de 2200-12-31 ≈ 109584
     if (valor < 1 || valor > 109584) return null
 
     const data = new Date(Math.round((valor - 25569) * 86400 * 1000))
     const ano = data.getUTCFullYear()
 
-    // Validar ano entre 1900 e 2200
     if (ano < 1900 || ano > 2200) return null
 
     return data.toISOString().split('T')[0]
@@ -139,6 +136,7 @@ export default function AdminImportarPage() {
 
       const comPlaca = linhasFormatadas.filter((l) => l.placa !== '')
 
+      // Remover duplicatas dentro do próprio arquivo (mesma placa)
       const placasVistas = new Map<string, typeof comPlaca[0]>()
       for (const linha of comPlaca) {
         placasVistas.set(linha.placa, linha)
@@ -150,10 +148,12 @@ export default function AdminImportarPage() {
         return
       }
 
+      // UPSERT: se a placa já existe, ATUALIZA; se não existe, CRIA
       const { error } = await supabase
         .from('processos')
         .upsert(linhasValidas, {
           onConflict: 'placa',
+          ignoreDuplicates: false,
         })
 
       if (error) {
@@ -245,6 +245,9 @@ export default function AdminImportarPage() {
             </ol>
             <p className="mt-2 text-blue-600">
               A planilha deve ter as colunas: placa, status, uf, tipo_servico, cpf_cnpj, sla_meta, observacoes, acao_necessaria, data_abertura
+            </p>
+            <p className="mt-2 text-blue-600 font-medium">
+              ℹ️ Se uma placa já existir, os dados serão atualizados em vez de duplicados.
             </p>
           </div>
         </div>
