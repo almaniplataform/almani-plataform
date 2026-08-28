@@ -8,7 +8,6 @@ import { useRouter } from 'next/navigation'
 function converterData(valor: any): string | null {
   if (!valor && valor !== 0) return null
 
-  // Objeto Date
   if (valor instanceof Date) {
     if (isNaN(valor.getTime())) return null
     const ano = valor.getUTCFullYear()
@@ -18,7 +17,6 @@ function converterData(valor: any): string | null {
     return `${ano}-${mes}-${dia}`
   }
 
-  // Número (serial Excel)
   if (typeof valor === 'number') {
     if (valor < 1 || valor > 109584) return null
     const data = new Date(Math.round((valor - 25569) * 86400 * 1000))
@@ -30,7 +28,6 @@ function converterData(valor: any): string | null {
   const str = String(valor).trim()
   if (!str || str === '-' || str.toLowerCase() === 'null') return null
 
-  // DD/MM/YYYY
   const m1 = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
   if (m1) {
     const ano = parseInt(m1[3])
@@ -38,26 +35,32 @@ function converterData(valor: any): string | null {
     return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`
   }
 
-  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const ano = parseInt(str.substring(0, 4))
     if (ano < 1900 || ano > 2200) return null
     return str.substring(0, 10)
   }
 
-  // DD-MM-YYYY ou DD.MM.YYYY
   const m2 = str.match(/(\d{1,2})[-.](\d{1,2})[-.](\d{4})/)
   if (m2) {
     return `${m2[3]}-${m2[2].padStart(2, '0')}-${m2[1].padStart(2, '0')}`
   }
 
-  // Serial em texto
   const num = Number(str)
   if (!isNaN(num) && num > 1 && num < 109584) {
     const data = new Date(Math.round((num - 25569) * 86400 * 1000))
     if (data.getUTCFullYear() >= 1900 && data.getUTCFullYear() <= 2200) {
       return data.toISOString().split('T')[0]
     }
+  }
+
+  const fallback = new Date(str)
+  if (!isNaN(fallback.getTime())) {
+    const ano = fallback.getUTCFullYear()
+    if (ano < 1900 || ano > 2200) return null
+    const mes = String(fallback.getUTCMonth() + 1).padStart(2, '0')
+    const dia = String(fallback.getUTCDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
   }
 
   return null
@@ -83,6 +86,28 @@ export default function AdminImportarPage() {
     carregarClientes()
   }, [])
 
+  function processarLinhas(linhasBrutas: Record<string, any>[]) {
+    const normalizadas = linhasBrutas.map((linha) => {
+      const nova: Record<string, any> = {}
+      for (const chave in linha) {
+        nova[chave.trim().replace(/_+$/, '').toLowerCase()] = linha[chave]
+      }
+      return nova
+    })
+
+    return normalizadas.map((l) => ({
+      placa: String(l['placa'] || '').toUpperCase().trim(),
+      status: String(l['status'] || '').trim(),
+      uf: String(l['uf'] || '').trim(),
+      tipo_servico: String(l['tipo_servico'] || '').trim(),
+      cpf_cnpj: l['cpf_cnpj'] ? String(l['cpf_cnpj']).trim() : null,
+      sla_meta: converterData(l['sla_meta'] ?? null),
+      observacoes: l['observacoes'] ? String(l['observacoes']).trim() : null,
+      acao_necessaria: l['acao_necessaria'] ? String(l['acao_necessaria']).trim() : null,
+      data_abertura: converterData(l['data_abertura'] ?? null),
+    }))
+  }
+
   async function aoSelecionar(file: File | null) {
     setArquivo(file)
     setPreview([])
@@ -90,32 +115,10 @@ export default function AdminImportarPage() {
     if (!file) return
     try {
       const dados = await file.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
       const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false, dateNF: 'dd/mm/yyyy' })
-
-      const normalizadas = linhas.map((linha) => {
-        const nova: Record<string, any> = {}
-        for (const chave in linha) {
-          nova[chave.trim().replace(/_+$/, '').toLowerCase()] = linha[chave]
-        }
-        return nova
-      })
-
-      const resultado = normalizadas.map((l) => ({
-        placa: String(l['placa'] || '').toUpperCase().trim(),
-        status: String(l['status'] || '').trim(),
-        uf: String(l['uf'] || '').trim(),
-        tipo_servico: String(l['tipo_servico'] || '').trim(),
-        cpf_cnpj: l['cpf_cnpj'] ? String(l['cpf_cnpj']).trim() : null,
-        sla_meta_bruta: l['sla_meta'] ?? null,
-        sla_meta: converterData(l['sla_meta'] ?? null),
-        observacoes: l['observacoes'] ? String(l['observacoes']).trim() : null,
-        acao_necessaria: l['acao_necessaria'] ? String(l['acao_necessaria']).trim() : null,
-        data_abertura_bruta: l['data_abertura'] ?? null,
-        data_abertura: converterData(l['data_abertura'] ?? null),
-      }))
-
+      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false })
+      const resultado = processarLinhas(linhas)
       setPreview(resultado.slice(0, 10))
     } catch (e) {
       setMensagem('Erro ao ler arquivo: ' + (e instanceof Error ? e.message : 'erro'))
@@ -131,28 +134,12 @@ export default function AdminImportarPage() {
 
     try {
       const dados = await arquivo.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
       const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false, dateNF: 'dd/mm/yyyy' })
+      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false })
 
-      const normalizadas = linhas.map((linha) => {
-        const nova: Record<string, any> = {}
-        for (const chave in linha) {
-          nova[chave.trim().replace(/_+$/, '').toLowerCase()] = linha[chave]
-        }
-        return nova
-      })
-
-      const formatadas = normalizadas.map((l) => ({
-        placa: String(l['placa'] || '').toUpperCase().trim(),
-        status: String(l['status'] || '').trim(),
-        uf: String(l['uf'] || '').trim(),
-        tipo_servico: String(l['tipo_servico'] || '').trim(),
-        cpf_cnpj: l['cpf_cnpj'] ? String(l['cpf_cnpj']).trim() : null,
-        sla_meta: converterData(l['sla_meta'] ?? null),
-        observacoes: l['observacoes'] ? String(l['observacoes']).trim() : null,
-        acao_necessaria: l['acao_necessaria'] ? String(l['acao_necessaria']).trim() : null,
-        data_abertura: converterData(l['data_abertura'] ?? null),
+      const formatadas = processarLinhas(linhas).map((l) => ({
+        ...l,
         cliente_id: clienteSelecionado,
       }))
 
@@ -214,33 +201,23 @@ export default function AdminImportarPage() {
                   <thead>
                     <tr className="bg-gray-100">
                       <th className="px-2 py-1 border border-gray-300 text-left">Placa</th>
-                      <th className="px-2 py-1 border border-gray-300 text-left">Data Abertura (bruta)</th>
-                      <th className="px-2 py-1 border border-gray-300 text-left">Data Abertura (final)</th>
-                      <th className="px-2 py-1 border border-gray-300 text-left">SLA Meta (bruta)</th>
-                      <th className="px-2 py-1 border border-gray-300 text-left">SLA Meta (final)</th>
+                      <th className="px-2 py-1 border border-gray-300 text-left">Status</th>
+                      <th className="px-2 py-1 border border-gray-300 text-left">Data Abertura</th>
+                      <th className="px-2 py-1 border border-gray-300 text-left">SLA Meta</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {preview.map((l, i) => {
-                      const temValor = (v: any) => v !== null && v !== undefined && v !== ''
-                      const aberturaFalhou = !l.data_abertura && temValor(l.data_abertura_bruta)
-                      const slaFalhou = !l.sla_meta && temValor(l.sla_meta_bruta)
-                      return (
-                        <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-2 py-1 border border-gray-300 font-mono">{l.placa || '-'}</td>
-                          <td className="px-2 py-1 border border-gray-300 font-mono text-gray-500">{l.data_abertura_bruta === null || l.data_abertura_bruta === undefined ? '(vazio)' : `"${String(l.data_abertura_bruta)}"`}</td>
-                          <td className={`px-2 py-1 border border-gray-300 font-mono ${aberturaFalhou ? 'bg-red-100 text-red-700 font-bold' : ''}`}>{l.data_abertura || '(vazio)'}</td>
-                          <td className="px-2 py-1 border border-gray-300 font-mono text-gray-500">{l.sla_meta_bruta === null || l.sla_meta_bruta === undefined ? '(vazio)' : `"${String(l.sla_meta_bruta)}"`}</td>
-                          <td className={`px-2 py-1 border border-gray-300 font-mono ${slaFalhou ? 'bg-red-100 text-red-700 font-bold' : ''}`}>{l.sla_meta || '(vazio)'}</td>
-                        </tr>
-                      )
-                    })}
+                    {preview.map((l, i) => (
+                      <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-2 py-1 border border-gray-300 font-mono">{l.placa || '-'}</td>
+                        <td className="px-2 py-1 border border-gray-300">{l.status || '-'}</td>
+                        <td className="px-2 py-1 border border-gray-300 font-mono">{l.data_abertura || '(vazio)'}</td>
+                        <td className="px-2 py-1 border border-gray-300 font-mono">{l.sla_meta || '(vazio)'}</td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
-                Vermelho = a planilha tem valor mas o sistema não conseguiu converter. Se aparecer vermelho, me mande um print desta tabela.
-              </p>
             </div>
           )}
 
