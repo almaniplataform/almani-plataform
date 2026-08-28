@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
@@ -14,44 +14,42 @@ type Processo = {
   cpf_cnpj: string | null
   tipo_servico: string | null
   sla_meta: string | null
-  observações: string | null
+  observacoes: string | null
   acao_necessaria: string | null
   created_at: string
 }
 
-type Movimentacao = {
-  id: string
-  descricao: string
-  data: string
+const STATUS_CORES: Record<string, string> = {
+  'Em andamento': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  'Concluído': 'bg-green-100 text-green-800 border-green-300',
+  'Concluido': 'bg-green-100 text-green-800 border-green-300',
+  'Aguardando documento': 'bg-orange-100 text-orange-800 border-orange-300',
+  'Pausado': 'bg-gray-100 text-gray-800 border-gray-300',
 }
 
-const STATUS_CORES: Record<string, string> = {
-  'Em andamento': 'bg-yellow-100 text-yellow-800',
-  'Concluído': 'bg-green-100 text-green-800',
-  'Aguardando documento': 'bg-orange-100 text-orange-800',
-  'Pausado': 'bg-gray-100 text-gray-800',
+function formatarData(data: string | null): string {
+  if (!data) return '-'
+  const d = new Date(data)
+  if (isNaN(d.getTime())) return '-'
+  return d.toLocaleDateString('pt-BR')
 }
 
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
-  const [movimentacoes, setMovimentacoes] = useState<Record<string, Movimentacao[]>>({})
   const [carregando, setCarregando] = useState(true)
-  const [usuario, setUsuario] = useState<string>('')
+  const [usuario, setUsuario] = useState('')
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     async function carregarDados() {
       const { data: { session } } = await supabase.auth.getSession()
-
       if (!session) {
         router.push('/login')
         return
       }
-
       setUsuario(session.user.email || '')
 
-      // Buscar processos do cliente
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
@@ -63,23 +61,17 @@ export default function DashboardPage() {
         return
       }
 
-      setProcessos(processosData || [])
+      const ordenados = [...(processosData || [])].sort((a, b) => {
+        const statusA = (a.status || '').toLowerCase()
+        const statusB = (b.status || '').toLowerCase()
+        if (statusA < statusB) return -1
+        if (statusA > statusB) return 1
+        return 0
+      })
 
-      // Buscar movimentações de cada processo
-      const movs: Record<string, Movimentacao[]> = {}
-      for (const p of processosData || []) {
-        const { data: movData } = await supabase
-          .from('movimentacoes')
-          .select('*')
-          .eq('processo_id', p.id)
-          .order('data', { ascending: false })
-
-        movs[p.id] = movData || []
-      }
-      setMovimentacoes(movs)
+      setProcessos(ordenados)
       setCarregando(false)
     }
-
     carregarDados()
   }, [router])
 
@@ -98,10 +90,19 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Cabeçalho */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-bold text-gray-800">Portal do Cliente</h1>
+      {/* Cabeçalho com logo */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+          {/* Logo à esquerda */}
+          <div className="flex items-center gap-3">
+            <img
+              src="/almani-logo.png"
+              alt="Almani - Simple Process"
+              className="h-12 w-auto"
+            />
+          </div>
+
+          {/* Usuário e sair à direita */}
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{usuario}</span>
             <button
@@ -114,8 +115,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      {/* Conteúdo */}
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
 
         {processos.length === 0 ? (
@@ -123,84 +123,98 @@ export default function DashboardPage() {
             Você ainda não possui processos cadastrados.
           </div>
         ) : (
-          <div className="space-y-4">
-            {processos.map((processo) => (
-              <div key={processo.id} className="bg-white rounded-lg shadow overflow-hidden">
-                {/* Card do processo */}
-                <div
-                  className="p-5 cursor-pointer hover:bg-gray-50 transition"
-                  onClick={() =>
-                    setProcessoExpandido(
-                      processoExpandido === processo.id ? null : processo.id
-                    )
-                  }
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-semibold text-gray-800">
-                        {processo.tipo_servico || 'Processo'}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Placa: {processo.placa || 'N/A'} • {processo.uf || ''}
-                      </p>
-                      {processo.cpf_cnpj && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          Documento: {processo.cpf_cnpj}
-                        </p>
-                      )}
-                      {processo.observações && (
-                        <p className="text-sm text-gray-600 mt-2">{processo.observações}</p>
-                      )}
-                    </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        STATUS_CORES[processo.status] || 'bg-gray-100 text-gray-800'
-                      }`}
-                    >
-                      {processo.status}
-                    </span>
-                  </div>
-                  <div className="flex gap-4 mt-3 text-xs text-gray-400">
-                    <span>Aberto em: {new Date(processo.data_abertura).toLocaleDateString('pt-BR')}</span>
-                    <span>
-                      Atualizado em: {new Date(processo.created_at).toLocaleDateString('pt-BR')}
-                    </span>
-                  </div>
-                </div>
+          <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full text-sm border-collapse">
+                <thead>
+                  <tr className="bg-gray-800 text-white">
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Tipo de Serviço</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Placa</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">UF</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Documento</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Data Abertura</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">SLA Meta</th>
+                    <th className="px-4 py-3 text-center font-semibold whitespace-nowrap">Observações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {processos.map((processo, index) => (
+                    <Fragment key={processo.id}>
+                      <tr
+                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 cursor-pointer border-b border-gray-200`}
+                        onClick={() =>
+                          setProcessoExpandido(
+                            processoExpandido === processo.id ? null : processo.id
+                          )
+                        }
+                      >
+                        <td className="px-4 py-3 text-center text-gray-800 font-medium border-r border-gray-200 whitespace-nowrap">
+                          {processo.tipo_servico || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-900 font-bold border-r border-gray-200 whitespace-nowrap">
+                          {processo.placa || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-700 border-r border-gray-200 whitespace-nowrap">
+                          {processo.uf || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
+                          {processo.cpf_cnpj || '-'}
+                        </td>
+                        <td className="px-4 py-3 text-center border-r border-gray-200 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-1 text-xs font-semibold rounded border ${STATUS_CORES[processo.status] || 'bg-gray-100 text-gray-700 border-gray-300'}`}
+                          >
+                            {processo.status || '-'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
+                          {formatarData(processo.data_abertura)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-blue-700 font-medium border-r border-gray-200 whitespace-nowrap">
+                          {formatarData(processo.sla_meta)}
+                        </td>
+                        <td className="px-4 py-3 text-center text-gray-600 max-w-[200px] truncate" title={processo.observacoes || ''}>
+                          {processo.observacoes || '-'}
+                        </td>
+                      </tr>
 
-                {/* Movimentações expansíveis */}
-                {processoExpandido === processo.id && (
-                  <div className="border-t border-gray-100 p-5 bg-gray-50">
-                    <h4 className="font-medium text-gray-700 mb-3">Movimentações</h4>
-                    {movimentacoes[processo.id]?.length === 0 ? (
-                      <p className="text-sm text-gray-400">Nenhuma movimentação registrada.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {movimentacoes[processo.id]?.map((mov) => (
-                          <div key={mov.id} className="flex gap-3">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 flex-shrink-0" />
-                            <div>
-                              <p className="text-sm text-gray-700">{mov.descricao}</p>
-                              <p className="text-xs text-gray-400">
-                                {new Date(mov.data).toLocaleString('pt-BR')}
-                              </p>
+                      {processoExpandido === processo.id && (
+                        <tr className="bg-blue-50 border-b border-gray-200">
+                          <td colSpan={8} className="px-6 py-4">
+                            <div className="grid grid-cols-2 gap-4">
+                              <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Observações Completas</span>
+                                <span className="text-sm text-gray-700">{processo.observacoes || 'Nenhuma observação.'}</span>
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-orange-500 uppercase block mb-1">Ação Necessária</span>
+                                <span className="text-sm text-orange-700">{processo.acao_necessaria || 'Nenhuma ação necessária.'}</span>
+                              </div>
+                              <div>
+                                <span className="text-xs font-bold text-gray-500 uppercase block mb-1">Atualizado em</span>
+                                <span className="text-sm text-gray-600">{formatarData(processo.created_at)}</span>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {processo.acao_necessaria && (
-                      <div className="mt-4 p-3 bg-orange-50 rounded-lg">
-                        <p className="text-sm font-medium text-orange-800">Ação necessária:</p>
-                        <p className="text-sm text-orange-700 mt-1">{processo.acao_necessaria}</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            ))}
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
+
+        {/* Rodapé com logo discreto */}
+        <footer className="mt-8 text-center">
+          <img
+            src="/almani-logo.png"
+            alt="Almani - Simple Process"
+            className="h-8 w-auto inline-block opacity-40"
+          />
+        </footer>
       </main>
     </div>
   )

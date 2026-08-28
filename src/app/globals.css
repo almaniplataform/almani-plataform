@@ -1,9 +1,5 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
+@import "tailwindcss";
 
 html, body {
-  font-family: system-ui, -apple-system, sans-serif;
+  font-family: system-ui, sans-serif;
 }
