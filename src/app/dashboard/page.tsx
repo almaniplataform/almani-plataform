@@ -27,24 +27,28 @@ const STATUS_CORES: Record<string, string> = {
   'Pausado': 'bg-gray-100 text-gray-800 border-gray-300',
 }
 
+// Formata direto da string YYYY-MM-DD — sem timezone
 function formatarData(data: string | null): string {
   if (!data) return '-'
+  const m = data.match(/^(\d{4})-(\d{2})-(\d{2})/)
+  if (m) {
+    return `${m[3]}/${m[2]}/${m[1]}`
+  }
   const d = new Date(data)
   if (isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('pt-BR')
 }
 
+// Compara como string YYYY-MM-DD — sem timezone
 function verificarVencimento(data: string | null, status: string | null): boolean {
   if (!data) return false
-  // Se o status for concluído, NÃO marca como vencido
   const statusLower = (status || '').toLowerCase().trim()
   if (statusLower === 'concluido' || statusLower === 'concluído') return false
-  const dataSla = new Date(data)
-  if (isNaN(dataSla.getTime())) return false
+  const dataSla = data.substring(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dataSla)) return false
   const hoje = new Date()
-  hoje.setHours(0, 0, 0, 0)
-  dataSla.setHours(0, 0, 0, 0)
-  return dataSla < hoje
+  const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
+  return dataSla < hojeStr
 }
 
 export default function DashboardPage() {
