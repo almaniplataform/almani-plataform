@@ -142,9 +142,9 @@ export default function AdminImportarPage() {
 
     try {
       const dados = await file.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
       const primeiraAba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhasBrutas = XLSX.utils.sheet_to_json<Record<string, any>>(primeiraAba)
+      const linhasBrutas = XLSX.utils.sheet_to_json<Record<string, any>>(primeiraAba, { raw: false, dateNF: 'dd/mm/yyyy' })
 
       const linhasNormalizadas = linhasBrutas.map((linha) => {
         const novaLinha: Record<string, any> = {}
