@@ -34,8 +34,11 @@ function formatarData(data: string | null): string {
   return d.toLocaleDateString('pt-BR')
 }
 
-function verificarVencimento(data: string | null): boolean {
+function verificarVencimento(data: string | null, status: string | null): boolean {
   if (!data) return false
+  // Se o status for concluído, NÃO marca como vencido
+  const statusLower = (status || '').toLowerCase().trim()
+  if (statusLower === 'concluido' || statusLower === 'concluído') return false
   const dataSla = new Date(data)
   if (isNaN(dataSla.getTime())) return false
   const hoje = new Date()
@@ -195,7 +198,7 @@ export default function DashboardPage() {
                           {formatarData(processo.data_abertura)}
                         </td>
                         <td className="px-4 py-3 text-center border-r border-gray-200 whitespace-nowrap">
-                          <span className={`font-medium ${verificarVencimento(processo.sla_meta) ? 'text-red-600 font-bold' : 'text-blue-700'}`}>
+                          <span className={`font-medium ${verificarVencimento(processo.sla_meta, processo.status) ? 'text-red-600 font-bold' : 'text-blue-700'}`}>
                             {formatarData(processo.sla_meta)}
                           </span>
                         </td>
