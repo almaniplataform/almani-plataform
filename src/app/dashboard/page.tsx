@@ -33,6 +33,15 @@ function formatarData(data: string | null): string {
   if (isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('pt-BR')
 }
+function verificarVencimento(data: string | null): boolean {
+  if (!data) return false
+  const dataSla = new Date(data)
+  if (isNaN(dataSla.getTime())) return false
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  dataSla.setHours(0, 0, 0, 0)
+  return dataSla < hoje
+}
 
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
@@ -173,9 +182,11 @@ export default function DashboardPage() {
                         <td className="px-4 py-3 text-center text-gray-900 font-bold border-r border-gray-200 whitespace-nowrap">
                           {processo.placa || '-'}
                         </td>
-                        <td className="px-4 py-3 text-center text-gray-700 border-r border-gray-200 whitespace-nowrap">
-                          {processo.uf || '-'}
-                        </td>
+                        <td className="px-4 py-3 text-center border-r border-gray-200 whitespace-nowrap">
+  <span className={`font-medium ${verificarVencimento(processo.sla_meta) ? 'text-red-600 font-bold' : 'text-blue-700'}`}>
+    {formatarData(processo.sla_meta)}
+  </span>
+</td>
                         <td className="px-4 py-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
                           {processo.cpf_cnpj || '-'}
                         </td>
