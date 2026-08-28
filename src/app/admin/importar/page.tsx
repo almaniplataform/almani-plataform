@@ -40,11 +40,11 @@ function converterDataExcel(valor: any): string | null {
     return `${anoNum}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`
   }
 
-  // Formato YYYY-MM-DD (já pronto)
+    // Formato YYYY-MM-DD (já pronto)
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const ano = parseInt(str.substring(0, 4))
     if (ano < 1900 || ano > 2200) return null
-    return str.split('T')[0]
+    return str.substring(0, 10)
   }
 
   // Se for apenas números (sem barras), tentar como serial
