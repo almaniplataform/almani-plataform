@@ -8,15 +8,22 @@ import { useRouter } from 'next/navigation'
 function converterDataExcel(valor: any): string | null {
   if (!valor || valor === '') return null
 
+  // Se for objeto Date do JavaScript
+  if (valor instanceof Date) {
+    if (isNaN(valor.getTime())) return null
+    const ano = valor.getFullYear()
+    if (ano < 1900 || ano > 2200) return null
+    const mes = String(valor.getMonth() + 1).padStart(2, '0')
+    const dia = String(valor.getDate()).padStart(2, '0')
+    return `${ano}-${mes}-${dia}`
+  }
+
   // Se for número (serial do Excel)
   if (typeof valor === 'number') {
     if (valor < 1 || valor > 109584) return null
-
     const data = new Date(Math.round((valor - 25569) * 86400 * 1000))
     const ano = data.getUTCFullYear()
-
     if (ano < 1900 || ano > 2200) return null
-
     return data.toISOString().split('T')[0]
   }
 
@@ -40,7 +47,7 @@ function converterDataExcel(valor: any): string | null {
     return `${anoNum}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`
   }
 
-    // Formato YYYY-MM-DD (já pronto)
+  // Formato YYYY-MM-DD (já pronto, com ou sem hora)
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
     const ano = parseInt(str.substring(0, 4))
     if (ano < 1900 || ano > 2200) return null
@@ -107,7 +114,7 @@ export default function AdminImportarPage() {
 
     try {
       const dados = await arquivo.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array' })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
       const primeiraAba = planilha.Sheets[planilha.SheetNames[0]]
       const linhasBrutas = XLSX.utils.sheet_to_json<Record<string, any>>(primeiraAba)
 
