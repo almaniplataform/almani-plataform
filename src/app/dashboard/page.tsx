@@ -48,11 +48,29 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
-      setUsuario(session.user.email || '')
 
+      const userEmail = session.user.email || ''
+      setUsuario(userEmail)
+
+      // Buscar o cliente_id pelo e-mail do usuário logado
+      const { data: cliente, error: clienteError } = await supabase
+        .from('clientes')
+        .select('id')
+        .eq('email', userEmail)
+        .single()
+
+      if (clienteError || !cliente) {
+        console.error('Cliente não encontrado para o e-mail:', userEmail)
+        setProcessos([])
+        setCarregando(false)
+        return
+      }
+
+      // Buscar apenas os processos desse cliente
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
+        .eq('cliente_id', cliente.id)
         .order('created_at', { ascending: false })
 
       if (error) {
