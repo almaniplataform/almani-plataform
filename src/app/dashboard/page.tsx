@@ -34,6 +34,15 @@ function formatarData(data: string | null): string {
   return d.toLocaleDateString('pt-BR')
 }
 
+function verificarVencimento(data: string | null): boolean {
+  if (!data) return false
+  const dataSla = new Date(data)
+  if (isNaN(dataSla.getTime())) return false
+  const hoje = new Date()
+  hoje.setHours(0, 0, 0, 0)
+  dataSla.setHours(0, 0, 0, 0)
+  return dataSla < hoje
+}
 
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
@@ -53,7 +62,6 @@ export default function DashboardPage() {
       const userEmail = session.user.email || ''
       setUsuario(userEmail)
 
-      // Buscar o cliente_id pelo e-mail do usuário logado
       const { data: cliente, error: clienteError } = await supabase
         .from('clientes')
         .select('id')
@@ -67,7 +75,6 @@ export default function DashboardPage() {
         return
       }
 
-      // Buscar apenas os processos desse cliente
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
@@ -109,10 +116,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Cabeçalho com logo */}
       <header className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
-          {/* Logo à esquerda */}
           <div className="flex items-center gap-3">
             <img
               src="/almani-logo.png"
@@ -121,7 +126,6 @@ export default function DashboardPage() {
             />
           </div>
 
-          {/* Usuário e sair à direita */}
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{usuario}</span>
             <button
@@ -174,9 +178,9 @@ export default function DashboardPage() {
                         <td className="px-4 py-3 text-center text-gray-900 font-bold border-r border-gray-200 whitespace-nowrap">
                           {processo.placa || '-'}
                         </td>
-                        <td className="px-4 py-3 text-center text-blue-700 font-medium border-r border-gray-200 whitespace-nowrap">
-  {formatarData(processo.sla_meta)}
-</td>
+                        <td className="px-4 py-3 text-center text-gray-700 border-r border-gray-200 whitespace-nowrap">
+                          {processo.uf || '-'}
+                        </td>
                         <td className="px-4 py-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
                           {processo.cpf_cnpj || '-'}
                         </td>
@@ -190,8 +194,10 @@ export default function DashboardPage() {
                         <td className="px-4 py-3 text-center text-gray-600 border-r border-gray-200 whitespace-nowrap">
                           {formatarData(processo.data_abertura)}
                         </td>
-                        <td className="px-4 py-3 text-center text-blue-700 font-medium border-r border-gray-200 whitespace-nowrap">
-                          {formatarData(processo.sla_meta)}
+                        <td className="px-4 py-3 text-center border-r border-gray-200 whitespace-nowrap">
+                          <span className={`font-medium ${verificarVencimento(processo.sla_meta) ? 'text-red-600 font-bold' : 'text-blue-700'}`}>
+                            {formatarData(processo.sla_meta)}
+                          </span>
                         </td>
                         <td className="px-4 py-3 text-center text-gray-600 max-w-[200px] truncate" title={processo.observacoes || ''}>
                           {processo.observacoes || '-'}
@@ -226,7 +232,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Rodapé com logo discreto */}
         <footer className="mt-8 text-center">
           <img
             src="/almani-logo.png"
