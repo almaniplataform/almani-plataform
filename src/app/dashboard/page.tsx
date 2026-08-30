@@ -1,9 +1,7 @@
 'use client'
-
 import { Fragment, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
-
 type Processo = {
   id: string
   cliente_id: string
@@ -18,7 +16,6 @@ type Processo = {
   acao_necessaria: string | null
   created_at: string
 }
-
 const STATUS_CORES: Record<string, string> = {
   'Em andamento': 'bg-yellow-100 text-yellow-800 border-yellow-300',
   'Concluído': 'bg-green-100 text-green-800 border-green-300',
@@ -26,8 +23,6 @@ const STATUS_CORES: Record<string, string> = {
   'Aguardando documento': 'bg-orange-100 text-orange-800 border-orange-300',
   'Pausado': 'bg-gray-100 text-gray-800 border-gray-300',
 }
-
-// Formata direto da string YYYY-MM-DD — sem timezone
 function formatarData(data: string | null): string {
   if (!data) return '-'
   const m = data.match(/^(\d{4})-(\d{2})-(\d{2})/)
@@ -38,8 +33,6 @@ function formatarData(data: string | null): string {
   if (isNaN(d.getTime())) return '-'
   return d.toLocaleDateString('pt-BR')
 }
-
-// Compara como string YYYY-MM-DD — sem timezone
 function verificarVencimento(data: string | null, status: string | null): boolean {
   if (!data) return false
   const statusLower = (status || '').toLowerCase().trim()
@@ -50,14 +43,12 @@ function verificarVencimento(data: string | null, status: string | null): boolea
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
   return dataSla < hojeStr
 }
-
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
   const [carregando, setCarregando] = useState(true)
   const [usuario, setUsuario] = useState('')
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
   const router = useRouter()
-
   useEffect(() => {
     async function carregarDados() {
       const { data: { session } } = await supabase.auth.getSession()
@@ -65,35 +56,29 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
-
       const userEmail = session.user.email || ''
       setUsuario(userEmail)
-
       const { data: cliente, error: clienteError } = await supabase
         .from('clientes')
         .select('id')
         .eq('email', userEmail)
         .single()
-
       if (clienteError || !cliente) {
         console.error('Cliente não encontrado para o e-mail:', userEmail)
         setProcessos([])
         setCarregando(false)
         return
       }
-
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
         .eq('cliente_id', cliente.id)
         .order('created_at', { ascending: false })
-
       if (error) {
         console.error('Erro ao carregar processos:', error)
         setCarregando(false)
         return
       }
-
       const ordenados = [...(processosData || [])].sort((a, b) => {
         const statusA = (a.status || '').toLowerCase()
         const statusB = (b.status || '').toLowerCase()
@@ -101,18 +86,15 @@ export default function DashboardPage() {
         if (statusA > statusB) return 1
         return 0
       })
-
       setProcessos(ordenados)
       setCarregando(false)
     }
     carregarDados()
   }, [router])
-
   async function sair() {
     await supabase.auth.signOut()
     router.push('/login')
   }
-
   if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -120,19 +102,27 @@ export default function DashboardPage() {
       </div>
     )
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative">
+          {/* Esquerda: Logo do Cliente (Santander) */}
           <div className="flex items-center gap-3">
             <img
-              src="/almani-logo.png"
-              alt="Almani - Simple Process"
+              src="/santander-logo.svg"
+              alt="Logo do Cliente"
               className="h-16 w-auto"
             />
           </div>
-
+          {/* Centro: Logo da Almani (maior) */}
+          <div className="absolute left-1/2 -translate-x-1/2">
+            <img
+              src="/almani-logo.png"
+              alt="Almani - Simple Process"
+              className="h-24 w-auto"
+            />
+          </div>
+          {/* Direita: Usuário e Sair */}
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">{usuario}</span>
             <button
@@ -144,10 +134,8 @@ export default function DashboardPage() {
           </div>
         </div>
       </header>
-
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
-
         {processos.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             Você ainda não possui processos cadastrados.
@@ -210,7 +198,6 @@ export default function DashboardPage() {
                           {processo.observacoes || '-'}
                         </td>
                       </tr>
-
                       {processoExpandido === processo.id && (
                         <tr className="bg-blue-50 border-b border-gray-200">
                           <td colSpan={8} className="px-6 py-4">
@@ -238,7 +225,6 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
-
         <footer className="mt-8 text-center">
           <img
             src="/almani-logo.png"
