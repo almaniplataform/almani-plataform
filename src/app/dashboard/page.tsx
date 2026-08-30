@@ -107,9 +107,9 @@ export default function DashboardPage() {
       <header className="bg-white shadow-sm">
 <div className="max-w-7xl mx-auto px-4 relative h-28">
   {/* Centro: Logo da Almani — centralizado de forma absoluta */}
-  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-    <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
-  </div>
+  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ml-8">
+  <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
+</div>
 
   {/* Esquerda: Logo do Cliente (Santander) */}
   <div className="absolute left-4 top-1/2 -translate-y-1/2">
