@@ -1,85 +1,109 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import * as XLSX from 'xlsx'
 import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
+type Cliente = { id: string; nome: string; email: string }
+
 function converterData(valor: any): string | null {
   if (!valor && valor !== 0) return null
-
-  if (valor instanceof Date) {
-    if (isNaN(valor.getTime())) return null
-    const ano = valor.getUTCFullYear()
-    if (ano < 1900 || ano > 2200) return null
-    const mes = String(valor.getUTCMonth() + 1).padStart(2, '0')
-    const dia = String(valor.getUTCDate()).padStart(2, '0')
-    return `${ano}-${mes}-${dia}`
-  }
-
-  if (typeof valor === 'number') {
-    if (valor < 1 || valor > 109584) return null
-    const data = new Date(Math.round((valor - 25569) * 86400 * 1000))
-    const ano = data.getUTCFullYear()
-    if (ano < 1900 || ano > 2200) return null
-    return data.toISOString().split('T')[0]
-  }
-
   const str = String(valor).trim()
   if (!str || str === '-' || str.toLowerCase() === 'null') return null
 
   // DD/MM/YYYY (brasileiro) — SEMPRE dia/mês/ano
-  const m1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  const m1 = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
   if (m1) {
     const dia = m1[1].padStart(2, '0')
     const mes = m1[2].padStart(2, '0')
     const ano = m1[3]
-    if (parseInt(ano) < 1900 || parseInt(ano) > 2200) return null
     return `${ano}-${mes}-${dia}`
   }
 
-  // DD/MM/YYYY com horário (ex: 05/09/2026 00:00:00)
-  const m1b = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s/)
-  if (m1b) {
-    const dia = m1b[1].padStart(2, '0')
-    const mes = m1b[2].padStart(2, '0')
-    const ano = m1b[3]
-    if (parseInt(ano) < 1900 || parseInt(ano) > 2200) return null
-    return `${ano}-${mes}-${dia}`
-  }
-
+  // YYYY-MM-DD (ISO)
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
-    const ano = parseInt(str.substring(0, 4))
-    if (ano < 1900 || ano > 2200) return null
     return str.substring(0, 10)
   }
 
-  const m2 = str.match(/(\d{1,2})[-.](\d{1,2})[-.](\d{4})/)
+  // DD-MM-YYYY
+  const m2 = str.match(/(\d{1,2})-(\d{1,2})-(\d{4})/)
   if (m2) {
     return `${m2[3]}-${m2[2].padStart(2, '0')}-${m2[1].padStart(2, '0')}`
   }
 
+  // Número serial Excel
   const num = Number(str)
   if (!isNaN(num) && num > 1 && num < 109584) {
     const data = new Date(Math.round((num - 25569) * 86400 * 1000))
-    if (data.getUTCFullYear() >= 1900 && data.getUTCFullYear() <= 2200) {
+    if (data.getUTCFullYear() >= 1900) {
       return data.toISOString().split('T')[0]
     }
-  }
-
-  const fallback = new Date(str)
-  if (!isNaN(fallback.getTime())) {
-    const ano = fallback.getUTCFullYear()
-    if (ano < 1900 || ano > 2200) return null
-    const mes = String(fallback.getUTCMonth() + 1).padStart(2, '0')
-    const dia = String(fallback.getUTCDate()).padStart(2, '0')
-    return `${ano}-${mes}-${dia}`
   }
 
   return null
 }
 
-type Cliente = { id: string; nome: string; email: string }
+function parseCSV(texto: string): Record<string, string>[] {
+  const linhas = texto.split(/\r?\n/).filter((l) => l.trim() !== '')
+  if (linhas.length === 0) return []
+
+  // Detectar separador: ; ou ,
+  const separador = linhas[0].includes(';') ? ';' : ','
+
+  // Parsear uma linha respeitando aspas
+  function parseLinha(linha: string): string[] {
+    const resultado: string[] = []
+    let atual = ''
+    let dentroAspas = false
+    for (let i = 0; i < linha.length; i++) {
+      const char = linha[i]
+      if (char === '"') {
+        if (dentroAspas && linha[i + 1] === '"') {
+          atual += '"'
+          i++
+        } else {
+          dentroAspas = !dentroAspas
+        }
+      } else if (char === separador && !dentroAspas) {
+        resultado.push(atual.trim())
+        atual = ''
+      } else {
+        atual += char
+      }
+    }
+    resultado.push(atual.trim())
+    return resultado
+  }
+
+  const headers = parseLinha(linhas[0]).map((h) =>
+    h.toLowerCase().trim().replace(/^"|"$/g, '').replace(/_+$/, '')
+  )
+
+  const dados: Record<string, string>[] = []
+  for (let i = 1; i < linhas.length; i++) {
+    const valores = parseLinha(linhas[i])
+    const obj: Record<string, string> = {}
+    for (let j = 0; j < headers.length; j++) {
+      obj[headers[j]] = (valores[j] || '').trim()
+    }
+    dados.push(obj)
+  }
+  return dados
+}
+
+function processarLinhas(linhas: Record<string, any>[]) {
+  return linhas.map((l) => ({
+    placa: String(l['placa'] || '').toUpperCase().trim(),
+    status: String(l['status'] || '').trim(),
+    uf: String(l['uf'] || '').trim(),
+    tipo_servico: String(l['tipo_servico'] || '').trim(),
+    cpf_cnpj: l['cpf_cnpj'] ? String(l['cpf_cnpj']).trim() : null,
+    sla_meta: converterData(l['sla_meta'] ?? null),
+    observacoes: l['observacoes'] ? String(l['observacoes']).trim() : null,
+    acao_necessaria: l['acao_necessaria'] ? String(l['acao_necessaria']).trim() : null,
+    data_abertura: converterData(l['data_abertura'] ?? null),
+  }))
+}
 
 export default function AdminImportarPage() {
   const [arquivo, setArquivo] = useState<File | null>(null)
@@ -99,38 +123,14 @@ export default function AdminImportarPage() {
     carregarClientes()
   }, [])
 
-  function processarLinhas(linhasBrutas: Record<string, any>[]) {
-    const normalizadas = linhasBrutas.map((linha) => {
-      const nova: Record<string, any> = {}
-      for (const chave in linha) {
-        nova[chave.trim().replace(/_+$/, '').toLowerCase()] = linha[chave]
-      }
-      return nova
-    })
-
-    return normalizadas.map((l) => ({
-      placa: String(l['placa'] || '').toUpperCase().trim(),
-      status: String(l['status'] || '').trim(),
-      uf: String(l['uf'] || '').trim(),
-      tipo_servico: String(l['tipo_servico'] || '').trim(),
-      cpf_cnpj: l['cpf_cnpj'] ? String(l['cpf_cnpj']).trim() : null,
-      sla_meta: converterData(l['sla_meta'] ?? null),
-      observacoes: l['observacoes'] ? String(l['observacoes']).trim() : null,
-      acao_necessaria: l['acao_necessaria'] ? String(l['acao_necessaria']).trim() : null,
-      data_abertura: converterData(l['data_abertura'] ?? null),
-    }))
-  }
-
   async function aoSelecionar(file: File | null) {
     setArquivo(file)
     setPreview([])
     setMensagem('')
     if (!file) return
     try {
-      const dados = await file.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
-      const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
+      const texto = await file.text()
+      const linhas = parseCSV(texto)
       const resultado = processarLinhas(linhas)
       setPreview(resultado.slice(0, 10))
     } catch (e) {
@@ -146,10 +146,8 @@ export default function AdminImportarPage() {
     setMensagem('')
 
     try {
-      const dados = await arquivo.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
-      const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
+      const texto = await arquivo.text()
+      const linhas = parseCSV(texto)
 
       const formatadas = processarLinhas(linhas).map((l) => ({
         ...l,
@@ -168,7 +166,7 @@ export default function AdminImportarPage() {
       if (error) {
         setMensagem('Erro: ' + error.message)
       } else {
-        const nome = clientes.find(c => c.id === clienteSelecionado)?.nome
+        const nome = clientes.find((c) => c.id === clienteSelecionado)?.nome
         setMensagem(`Sucesso! ${validas.length} processos importados para ${nome}.`)
         setArquivo(null)
         setPreview([])
@@ -191,7 +189,7 @@ export default function AdminImportarPage() {
 
       <main className="max-w-5xl mx-auto px-4 py-8">
         <div className="bg-white rounded-lg shadow p-6 space-y-4">
-          <h2 className="text-lg font-bold text-gray-800">Importar Planilha</h2>
+          <h2 className="text-lg font-bold text-gray-800">Importar Planilha (CSV)</h2>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Selecionar Cliente</label>
@@ -202,8 +200,8 @@ export default function AdminImportarPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Arquivo da Planilha</label>
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={(e) => aoSelecionar(e.target.files?.[0] || null)} className="border border-gray-300 rounded p-2 w-full" />
+            <label className="block text-sm font-medium text-gray-700 mb-2">Arquivo CSV</label>
+            <input type="file" accept=".csv" onChange={(e) => aoSelecionar(e.target.files?.[0] || null)} className="border border-gray-300 rounded p-2 w-full" />
           </div>
 
           {preview.length > 0 && (
@@ -214,7 +212,6 @@ export default function AdminImportarPage() {
                   <thead>
                     <tr className="bg-gray-100">
                       <th className="px-2 py-1 border border-gray-300 text-left">Placa</th>
-                      <th className="px-2 py-1 border border-gray-300 text-left">Status</th>
                       <th className="px-2 py-1 border border-gray-300 text-left">Data Abertura</th>
                       <th className="px-2 py-1 border border-gray-300 text-left">SLA Meta</th>
                     </tr>
@@ -223,7 +220,6 @@ export default function AdminImportarPage() {
                     {preview.map((l, i) => (
                       <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                         <td className="px-2 py-1 border border-gray-300 font-mono">{l.placa || '-'}</td>
-                        <td className="px-2 py-1 border border-gray-300">{l.status || '-'}</td>
                         <td className="px-2 py-1 border border-gray-300 font-mono">{l.data_abertura || '(vazio)'}</td>
                         <td className="px-2 py-1 border border-gray-300 font-mono">{l.sla_meta || '(vazio)'}</td>
                       </tr>
