@@ -104,8 +104,8 @@ export default function DashboardPage() {
   }
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center relative">
+      <header className="bg-white shadow-sm">
+  <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center relative">
           {/* Esquerda: Logo do Cliente (Santander) */}
           <div className="flex items-center gap-3">
             <img
