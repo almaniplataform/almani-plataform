@@ -150,7 +150,7 @@ export default function AdminImportarPage() {
 
       if (validas.length === 0) { setMensagem('Nenhuma linha válida.'); return }
 
-      const { error } = await supabase.from('processos').upsert(validas, { onConflict: 'placa' })
+    const { error } = await supabase.from('processos').upsert(validas, { onConflict: 'placa,cliente_id' })
 
       if (error) {
         setMensagem('Erro: ' + error.message)
