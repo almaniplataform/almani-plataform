@@ -105,25 +105,17 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
-  <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center relative">
-          {/* Esquerda: Logo do Cliente (Santander) */}
-          <div className="flex items-center gap-3">
-            <img
-              src="/santander-logo.svg"
-              alt="Logo do Cliente"
-              className="h-16 w-auto"
-            />
-          </div>
-          {/* Centro: Logo da Almani (maior) */}
-          <div className="absolute left-1/2 -translate-x-1/2">
-            <img
-              src="/almani-logo.png"
-              alt="Almani - Simple Process"
-              className="h-24 w-auto"
-            />
-          </div>
-          {/* Direita: Usuário e Sair */}
-          <div className="flex items-center gap-4">
+<div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-3 items-center">
+  {/* Esquerda: Logo do Cliente (Santander) */}
+  <div className="flex items-center justify-start">
+    <img src="/santander-logo.svg" alt="Logo do Cliente" className="h-16 w-auto" />
+  </div>
+  {/* Centro: Logo da Almani (maior) */}
+  <div className="flex items-center justify-center">
+    <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
+  </div>
+  {/* Direita: Usuário + Sair */}
+  <div className="flex items-center justify-end gap-4">
             <span className="text-sm text-gray-600">{usuario}</span>
             <button
               onClick={sair}
