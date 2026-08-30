@@ -28,11 +28,24 @@ function converterData(valor: any): string | null {
   const str = String(valor).trim()
   if (!str || str === '-' || str.toLowerCase() === 'null') return null
 
-  const m1 = str.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/)
+  // DD/MM/YYYY (brasileiro) — SEMPRE dia/mês/ano
+  const m1 = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
   if (m1) {
-    const ano = parseInt(m1[3])
-    if (ano < 1900 || ano > 2200) return null
-    return `${m1[3]}-${m1[2].padStart(2, '0')}-${m1[1].padStart(2, '0')}`
+    const dia = m1[1].padStart(2, '0')
+    const mes = m1[2].padStart(2, '0')
+    const ano = m1[3]
+    if (parseInt(ano) < 1900 || parseInt(ano) > 2200) return null
+    return `${ano}-${mes}-${dia}`
+  }
+
+  // DD/MM/YYYY com horário (ex: 05/09/2026 00:00:00)
+  const m1b = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s/)
+  if (m1b) {
+    const dia = m1b[1].padStart(2, '0')
+    const mes = m1b[2].padStart(2, '0')
+    const ano = m1b[3]
+    if (parseInt(ano) < 1900 || parseInt(ano) > 2200) return null
+    return `${ano}-${mes}-${dia}`
   }
 
   if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
@@ -116,8 +129,8 @@ export default function AdminImportarPage() {
     try {
       const dados = await file.arrayBuffer()
       const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
-const aba = planilha.Sheets[planilha.SheetNames[0]]
-const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
+      const aba = planilha.Sheets[planilha.SheetNames[0]]
+      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
       const resultado = processarLinhas(linhas)
       setPreview(resultado.slice(0, 10))
     } catch (e) {
@@ -135,8 +148,8 @@ const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
     try {
       const dados = await arquivo.arrayBuffer()
       const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
-const aba = planilha.Sheets[planilha.SheetNames[0]]
-const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
+      const aba = planilha.Sheets[planilha.SheetNames[0]]
+      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
 
       const formatadas = processarLinhas(linhas).map((l) => ({
         ...l,
@@ -150,7 +163,7 @@ const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
 
       if (validas.length === 0) { setMensagem('Nenhuma linha válida.'); return }
 
-    const { error } = await supabase.from('processos').upsert(validas, { onConflict: 'placa,cliente_id' })
+      const { error } = await supabase.from('processos').upsert(validas, { onConflict: 'placa,cliente_id' })
 
       if (error) {
         setMensagem('Erro: ' + error.message)
