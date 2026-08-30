@@ -105,26 +105,26 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
-<div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-3 items-center">
-  {/* Esquerda: Logo do Cliente (Santander) */}
-  <div className="flex items-center justify-start">
+<div className="max-w-7xl mx-auto px-4 py-4 relative flex justify-center items-center">
+  {/* Centro: Logo da Almani (maior) — centralizado de verdade */}
+  <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
+
+  {/* Esquerda: Logo do Cliente (Santander) — posicionado absolutamente */}
+  <div className="absolute left-4 flex items-center">
     <img src="/santander-logo.svg" alt="Logo do Cliente" className="h-16 w-auto" />
   </div>
-  {/* Centro: Logo da Almani (maior) */}
-  <div className="flex items-center justify-center">
-    <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
+
+  {/* Direita: Usuário + Sair — posicionado absolutamente */}
+  <div className="absolute right-4 flex items-center gap-4">
+    <span className="text-sm text-gray-600">{usuario}</span>
+    <button
+      onClick={sair}
+      className="text-sm text-red-600 hover:text-red-700 font-medium"
+    >
+      Sair
+    </button>
   </div>
-  {/* Direita: Usuário + Sair */}
-  <div className="flex items-center justify-end gap-4">
-            <span className="text-sm text-gray-600">{usuario}</span>
-            <button
-              onClick={sair}
-              className="text-sm text-red-600 hover:text-red-700 font-medium"
-            >
-              Sair
-            </button>
-          </div>
-        </div>
+</div>
       </header>
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
