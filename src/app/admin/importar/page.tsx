@@ -115,9 +115,9 @@ export default function AdminImportarPage() {
     if (!file) return
     try {
       const dados = await file.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
-      const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
+const aba = planilha.Sheets[planilha.SheetNames[0]]
+const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
       const resultado = processarLinhas(linhas)
       setPreview(resultado.slice(0, 10))
     } catch (e) {
@@ -134,9 +134,9 @@ export default function AdminImportarPage() {
 
     try {
       const dados = await arquivo.arrayBuffer()
-      const planilha = XLSX.read(dados, { type: 'array', cellDates: false })
-      const aba = planilha.Sheets[planilha.SheetNames[0]]
-      const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: false })
+      const planilha = XLSX.read(dados, { type: 'array', cellDates: true })
+const aba = planilha.Sheets[planilha.SheetNames[0]]
+const linhas = XLSX.utils.sheet_to_json<Record<string, any>>(aba, { raw: true })
 
       const formatadas = processarLinhas(linhas).map((l) => ({
         ...l,
