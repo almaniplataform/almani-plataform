@@ -339,6 +339,13 @@ export default function DashboardPage() {
                                 <span className="text-sm text-gray-600">{formatarData(processo.created_at)}</span>
                               </div>
                             </div>
+
+                            <AnexosProcesso
+                              processoId={processo.id}
+                              clienteId={processo.cliente_id}
+                              usuarioEmail={usuario}
+                              isAdmin={false}
+                            />
                           </td>
                         </tr>
                       )}

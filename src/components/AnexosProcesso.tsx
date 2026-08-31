@@ -34,7 +34,20 @@ export default function AnexosProcesso({
   }
 
   useEffect(() => {
-    carregarAnexos()
+    let ativo = true
+
+    fetch(`/api/anexos/listar?processoId=${processoId}`)
+      .then(async (res) => {
+        if (!res.ok) return null
+        return res.json() as Promise<Anexo[]>
+      })
+      .then((data) => {
+        if (ativo && data) setAnexos(data)
+      })
+
+    return () => {
+      ativo = false
+    }
   }, [processoId])
 
   async function aoSelecionarArquivo(e: React.ChangeEvent<HTMLInputElement>) {
@@ -61,7 +74,7 @@ export default function AnexosProcesso({
         const data = await res.json()
         alert('Erro: ' + data.error)
       }
-    } catch (e) {
+    } catch {
       alert('Erro ao enviar arquivo')
     } finally {
       setUploading(false)
@@ -82,7 +95,7 @@ export default function AnexosProcesso({
       if (res.ok) {
         await carregarAnexos()
       }
-    } catch (e) {
+    } catch {
       alert('Erro ao excluir')
     }
   }

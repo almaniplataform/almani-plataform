@@ -10,7 +10,7 @@ export async function POST(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Buscar o anexo para pegar o caminho do arquivo
+    // Buscar o anexo para pegar o caminho do arquivo no bucket privado.
     const { data: anexo } = await supabaseAdmin
       .from('anexos')
       .select('url_arquivo')
@@ -18,13 +18,7 @@ export async function POST(request: Request) {
       .single()
 
     if (anexo) {
-      // Extrair o caminho do arquivo da URL
-      const url = new URL(anexo.url_arquivo)
-      const caminho = url.pathname.split('/anexos-processos/')[1]
-
-      if (caminho) {
-        await supabaseAdmin.storage.from('anexos-processos').remove([caminho])
-      }
+      await supabaseAdmin.storage.from('anexos-processos').remove([anexo.url_arquivo])
     }
 
     // Deletar o registro
@@ -38,7 +32,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }

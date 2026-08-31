@@ -24,5 +24,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.json(data)
+  const anexos = await Promise.all((data || []).map(async (anexo) => {
+    const { data: urlData, error: urlError } = await supabaseAdmin
+      .storage
+      .from('anexos-processos')
+      .createSignedUrl(anexo.url_arquivo, 60 * 60)
+
+    if (urlError || !urlData?.signedUrl) {
+      return { ...anexo, url_arquivo: '' }
+    }
+
+    return { ...anexo, url_arquivo: urlData.signedUrl }
+  }))
+
+  return NextResponse.json(anexos)
 }

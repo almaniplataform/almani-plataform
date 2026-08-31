@@ -31,20 +31,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Erro no upload: ' + uploadError.message }, { status: 500 })
     }
 
-    // Passo 2: Obter URL pública
-    const { data: urlData } = supabaseAdmin
-      .storage
-      .from('anexos-processos')
-      .getPublicUrl(nomeArquivoStorage)
-
-    // Passo 3: Registrar na tabela anexos
+    // Passo 2: Registrar o caminho no bucket privado.
     const { error: dbError } = await supabaseAdmin
       .from('anexos')
       .insert({
         processo_id: processoId,
         cliente_id: clienteId,
         nome_arquivo: file.name,
-        url_arquivo: urlData.publicUrl,
+        url_arquivo: nomeArquivoStorage,
         tamanho_bytes: file.size,
         enviado_por: enviadoPor,
       })
@@ -53,8 +47,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Erro ao registrar: ' + dbError.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, url: urlData.publicUrl })
-  } catch (e) {
+    return NextResponse.json({ success: true })
+  } catch {
     return NextResponse.json({ error: 'Erro interno' }, { status: 500 })
   }
 }
