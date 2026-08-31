@@ -1,5 +1,6 @@
 'use client'
 import { Fragment, useEffect, useState } from 'react'
+import Image from 'next/image'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 type Processo = {
@@ -43,42 +44,6 @@ function verificarVencimento(data: string | null, status: string | null): boolea
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
   return dataSla < hojeStr
 }
-function AlmaniLogo() {
-  return (
-    <svg
-      viewBox="0 0 520 220"
-      role="img"
-      aria-label="Almani - Simple Process"
-      style={{
-        display: 'block',
-        height: '96px',
-        width: 'auto',
-        maxWidth: '100%',
-      }}
-    >
-      <defs>
-        <linearGradient id="almaniRing" x1="0%" x2="100%" y1="0%" y2="100%">
-          <stop offset="0%" stopColor="#2f3f52" />
-          <stop offset="50%" stopColor="#17263b" />
-          <stop offset="100%" stopColor="#dfe7ee" />
-        </linearGradient>
-      </defs>
-
-      <g transform="translate(260, 76)">
-        <circle cx="0" cy="0" r="80" fill="none" stroke="url(#almaniRing)" strokeWidth="18" />
-        <circle cx="0" cy="0" r="58" fill="none" stroke="#20364c" strokeWidth="18" />
-        <circle cx="0" cy="0" r="36" fill="none" stroke="#233d59" strokeWidth="14" />
-
-        <path d="M -12 -80 L 12 -80 L 12 -12 L 80 -12 L 80 12 L 12 12 L 12 80 L -12 80 L -12 12 L -80 12 L -80 -12 L -12 -12 Z" fill="none" stroke="#20364c" strokeWidth="10" strokeLinejoin="round" />
-        <path d="M -80 0 L 80 0 M 0 -80 L 0 80" stroke="#20364c" strokeWidth="10" strokeLinecap="round" />
-      </g>
-
-      <text x="260" y="165" textAnchor="middle" fill="#163452" fontSize="62" fontWeight="700" letterSpacing="4" fontFamily="Arial, Helvetica, sans-serif">ALMANI</text>
-      <text x="260" y="198" textAnchor="middle" fill="#163452" fontSize="24" fontWeight="500" letterSpacing="5" fontFamily="Arial, Helvetica, sans-serif">SIMPLE PROCESS</text>
-    </svg>
-  )
-}
-
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -178,7 +143,19 @@ export default function DashboardPage() {
               minWidth: 0,
             }}
           >
-            <AlmaniLogo />
+            <Image
+              src="/almani-logo.png"
+              alt="Almani - Simple Process"
+              width={96}
+              height={96}
+              style={{
+                display: 'block',
+                width: '96px',
+                height: '96px',
+                objectFit: 'contain',
+                flexShrink: 0,
+              }}
+            />
           </div>
 
           {/* Direita: Usuário + Sair */}
