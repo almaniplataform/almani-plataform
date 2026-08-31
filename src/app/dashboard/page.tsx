@@ -66,6 +66,15 @@ export default function DashboardPage() {
         router.push('/login')
         return
       }
+
+      const autorizacaoAdmin = await fetch('/api/processos/importar', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (autorizacaoAdmin.ok) {
+        router.replace('/admin')
+        return
+      }
+
       const userEmail = session.user.email || ''
       setUsuario(userEmail)
       const { data: clienteData, error: clienteError } = await supabase
