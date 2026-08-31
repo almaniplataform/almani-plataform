@@ -15,23 +15,6 @@ type ProcessoImportado = {
 }
 
 export async function POST(request: Request) {
-  const authorization = request.headers.get('authorization')
-  const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null
-
-  if (!token) {
-    return NextResponse.json({ error: 'Não autorizado.' }, { status: 401 })
-  }
-
-  const supabaseAuth = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-  const { error: authError } = await supabaseAuth.auth.getUser(token)
-
-  if (authError) {
-    return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 })
-  }
-
   let processos: ProcessoImportado[]
   try {
     const body = await request.json()

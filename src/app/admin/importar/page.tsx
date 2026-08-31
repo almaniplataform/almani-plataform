@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 type Cliente = { id: string; nome: string; email: string }
@@ -174,17 +173,10 @@ setClientes(data)
 
       if (validas.length === 0) { setMensagem('Nenhuma linha válida.'); return }
 
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
-        setMensagem('Erro: você precisa estar logado para importar.')
-        return
-      }
-
       const response = await fetch('/api/processos/importar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ processos: validas }),
       })
