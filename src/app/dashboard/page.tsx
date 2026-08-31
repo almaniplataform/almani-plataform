@@ -113,6 +113,19 @@ export default function DashboardPage() {
     await supabase.auth.signOut()
     router.push('/login')
   }
+  async function solicitarAlteracaoSenha() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user?.email) return
+
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    })
+    if (error) {
+      alert('Não foi possível enviar o link de alteração de senha.')
+      return
+    }
+    alert('Enviamos um link para alterar sua senha ao seu e-mail.')
+  }
   if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -213,6 +226,20 @@ export default function DashboardPage() {
             >
               {usuario}
             </span>
+            <button
+              onClick={solicitarAlteracaoSenha}
+              style={{
+                fontSize: '14px',
+                color: '#2563eb',
+                fontWeight: 500,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Alterar senha
+            </button>
             <button
               onClick={sair}
               style={{
