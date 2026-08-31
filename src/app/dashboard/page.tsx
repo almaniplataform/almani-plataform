@@ -106,7 +106,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
 <div className="max-w-7xl mx-auto px-4 relative h-28 flex items-center justify-center">
-  {/* Centro: Logo da Almani — filho direto do flex, sem absolute, sem transform */}
+  {/* Centro: Logo da Almani — filho direto do flex */}
   <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
 
   {/* Esquerda: Logo do Cliente (Santander) */}
