@@ -6,7 +6,19 @@ import { useRouter } from 'next/navigation'
 
 type Cliente = { id: string; nome: string; email: string }
 
-function converterData(valor: any): string | null {
+type ProcessoImportacao = {
+  placa: string
+  status: string
+  uf: string
+  tipo_servico: string
+  cpf_cnpj: string | null
+  sla_meta: string | null
+  observacoes: string | null
+  acao_necessaria: string | null
+  data_abertura: string | null
+}
+
+function converterData(valor: unknown): string | null {
   if (!valor && valor !== 0) return null
   const str = String(valor).trim()
   if (!str || str === '-' || str.toLowerCase() === 'null') return null
@@ -91,7 +103,7 @@ function parseCSV(texto: string): Record<string, string>[] {
   return dados
 }
 
-function processarLinhas(linhas: Record<string, any>[]) {
+function processarLinhas(linhas: Record<string, string>[]): ProcessoImportacao[] {
   return linhas.map((l) => ({
     placa: String(l['placa'] || '').toUpperCase().trim(),
     status: String(l['status'] || '').trim(),
@@ -111,7 +123,7 @@ export default function AdminImportarPage() {
   const [mensagem, setMensagem] = useState('')
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteSelecionado, setClienteSelecionado] = useState('')
-  const [preview, setPreview] = useState<any[]>([])
+  const [preview, setPreview] = useState<ProcessoImportacao[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -156,16 +168,30 @@ setClientes(data)
       }))
 
       const comPlaca = formatadas.filter((l) => l.placa !== '')
-      const unicas = new Map<string, any>()
+      const unicas = new Map<string, ProcessoImportacao>()
       for (const l of comPlaca) unicas.set(l.placa, l)
       const validas = Array.from(unicas.values())
 
       if (validas.length === 0) { setMensagem('Nenhuma linha válida.'); return }
 
-      const { error } = await supabase.from('processos').upsert(validas, { onConflict: 'placa,cliente_id' })
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        setMensagem('Erro: você precisa estar logado para importar.')
+        return
+      }
 
-      if (error) {
-        setMensagem('Erro: ' + error.message)
+      const response = await fetch('/api/processos/importar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ processos: validas }),
+      })
+      const result: { error?: string } = await response.json()
+
+      if (!response.ok) {
+        setMensagem('Erro: ' + (result.error || 'não foi possível importar a planilha.'))
       } else {
         const nome = clientes.find((c) => c.id === clienteSelecionado)?.nome
         setMensagem(`Sucesso! ${validas.length} processos importados para ${nome}.`)
