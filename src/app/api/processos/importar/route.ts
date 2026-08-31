@@ -14,7 +14,49 @@ type ProcessoImportado = {
   cliente_id: string
 }
 
+async function validarAdministrador(request: Request): Promise<NextResponse | null> {
+  const authorization = request.headers.get('authorization')
+  const token = authorization?.startsWith('Bearer ') ? authorization.slice(7) : null
+
+  if (!token) {
+    return NextResponse.json({ error: 'Autenticação necessária.' }, { status: 401 })
+  }
+
+  const supabaseAuth = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+  const { data: { user }, error: authError } = await supabaseAuth.auth.getUser(token)
+
+  if (authError || !user?.email) {
+    return NextResponse.json({ error: 'Sessão inválida.' }, { status: 401 })
+  }
+
+  const adminEmails = (process.env.ALMANI_ADMIN_EMAILS || '')
+    .split(',')
+    .map((email) => email.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (adminEmails.length === 0) {
+    return NextResponse.json({ error: 'Administradores não configurados.' }, { status: 503 })
+  }
+
+  if (!adminEmails.includes(user.email.toLowerCase())) {
+    return NextResponse.json({ error: 'Sem permissão para importar processos.' }, { status: 403 })
+  }
+
+  return null
+}
+
+export async function GET(request: Request) {
+  const erroAutorizacao = await validarAdministrador(request)
+  return erroAutorizacao || new Response(null, { status: 204 })
+}
+
 export async function POST(request: Request) {
+  const erroAutorizacao = await validarAdministrador(request)
+  if (erroAutorizacao) return erroAutorizacao
+
   let processos: ProcessoImportado[]
   try {
     const body = await request.json()

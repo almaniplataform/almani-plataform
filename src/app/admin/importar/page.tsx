@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '../../../lib/supabase'
 import { useRouter } from 'next/navigation'
 
 type Cliente = { id: string; nome: string; email: string }
@@ -127,13 +128,27 @@ export default function AdminImportarPage() {
 
   useEffect(() => {
     async function carregarClientes() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.replace('/login?next=/admin/importar')
+        return
+      }
+
+      const autorizacao = await fetch('/api/processos/importar', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
+      if (!autorizacao.ok) {
+        router.replace('/dashboard')
+        return
+      }
+
       const res = await fetch('/api/clientes')
 if (!res.ok) { setMensagem('Erro ao carregar clientes'); return }
 const data = await res.json()
 setClientes(data)
     }
     carregarClientes()
-  }, [])
+  }, [router])
 
   async function aoSelecionar(file: File | null) {
     setArquivo(file)
@@ -173,10 +188,17 @@ setClientes(data)
 
       if (validas.length === 0) { setMensagem('Nenhuma linha válida.'); return }
 
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        router.replace('/login?next=/admin/importar')
+        return
+      }
+
       const response = await fetch('/api/processos/importar', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ processos: validas }),
       })

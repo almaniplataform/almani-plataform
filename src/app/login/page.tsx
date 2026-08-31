@@ -25,7 +25,8 @@ export default function LoginPage() {
       setErro('E-mail ou senha incorretos.')
       setCarregando(false)
     } else {
-      router.push('/dashboard')
+      const proximo = new URLSearchParams(window.location.search).get('next')
+      router.push(proximo?.startsWith('/') ? proximo : '/dashboard')
     }
   }
 
