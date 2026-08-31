@@ -115,6 +115,7 @@ export default function DashboardPage() {
             gridTemplateColumns: 'minmax(160px, 1fr) auto minmax(220px, 320px)',
             alignItems: 'center',
             gap: '12px',
+            position: 'relative',
           }}
         >
           {/* Esquerda: Logo do Cliente (Santander) */}
@@ -139,8 +140,10 @@ export default function DashboardPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              justifySelf: 'center',
               minWidth: 0,
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
             }}
           >
             <Image
