@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
 import AnexosProcesso from '../../components/AnexosProcesso'
+import PanoramaExecutivo from '../../components/PanoramaExecutivo'
 type Processo = {
   id: string
   cliente_id: string
@@ -268,7 +269,10 @@ export default function DashboardPage() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">Meus Processos</h2>
+          <PanoramaExecutivo processos={processos} />
+        </div>
         {processos.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             Você ainda não possui processos cadastrados.
