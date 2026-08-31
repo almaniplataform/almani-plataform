@@ -105,27 +105,35 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
-<div className="max-w-7xl mx-auto px-4 relative h-28 flex items-center justify-center">
-  {/* Centro: Logo da Almani — filho direto do flex */}
-  <img src="/almani-logo.png" alt="Almani - Simple Process" className="h-24 w-auto" />
+  <div className="max-w-7xl mx-auto px-4" style={{ textAlign: 'center', position: 'relative', height: '112px', lineHeight: '112px' }}>
+    {/* Centro: Logo da Almani — text-align center + inline-block = bulletproof */}
+    <img
+      src="/almani-logo.png?v=2"
+      alt="Almani - Simple Process"
+      style={{ height: '96px', width: 'auto', display: 'inline-block', verticalAlign: 'middle' }}
+    />
 
-  {/* Esquerda: Logo do Cliente (Santander) */}
-  <div className="absolute left-4 top-0 h-full flex items-center">
-    <img src="/santander-logo.svg" alt="Logo do Cliente" className="h-16 w-auto" />
-  </div>
+    {/* Esquerda: Logo do Cliente (Santander) */}
+    <div style={{ position: 'absolute', left: '16px', top: '0', height: '100%', display: 'flex', alignItems: 'center' }}>
+      <img
+        src="/santander-logo.svg"
+        alt="Logo do Cliente"
+        style={{ height: '64px', width: 'auto' }}
+      />
+    </div>
 
-  {/* Direita: Usuário + Sair */}
-  <div className="absolute right-4 top-0 h-full flex items-center gap-4">
-    <span className="text-sm text-gray-600">{usuario}</span>
-    <button
-      onClick={sair}
-      className="text-sm text-red-600 hover:text-red-700 font-medium"
-    >
-      Sair
-    </button>
+    {/* Direita: Usuário + Sair */}
+    <div style={{ position: 'absolute', right: '16px', top: '0', height: '100%', display: 'flex', alignItems: 'center', gap: '16px' }}>
+      <span style={{ fontSize: '14px', color: '#4b5563' }}>{usuario}</span>
+      <button
+        onClick={sair}
+        style={{ fontSize: '14px', color: '#dc2626', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+      >
+        Sair
+      </button>
+    </div>
   </div>
-</div>
-      </header>
+</header>
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
         {processos.length === 0 ? (
