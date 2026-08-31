@@ -116,9 +116,10 @@ export default function AdminImportarPage() {
 
   useEffect(() => {
     async function carregarClientes() {
-      const { data, error } = await supabase.from('clientes').select('id, nome, email').order('nome')
-      if (error) { setMensagem('Erro: ' + error.message); return }
-      setClientes(data || [])
+      const res = await fetch('/api/clientes')
+if (!res.ok) { setMensagem('Erro ao carregar clientes'); return }
+const data = await res.json()
+setClientes(data)
     }
     carregarClientes()
   }, [])

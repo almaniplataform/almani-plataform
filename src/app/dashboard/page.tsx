@@ -43,6 +43,42 @@ function verificarVencimento(data: string | null, status: string | null): boolea
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
   return dataSla < hojeStr
 }
+function AlmaniLogo() {
+  return (
+    <svg
+      viewBox="0 0 520 220"
+      role="img"
+      aria-label="Almani - Simple Process"
+      style={{
+        display: 'block',
+        height: '96px',
+        width: 'auto',
+        maxWidth: '100%',
+      }}
+    >
+      <defs>
+        <linearGradient id="almaniRing" x1="0%" x2="100%" y1="0%" y2="100%">
+          <stop offset="0%" stopColor="#2f3f52" />
+          <stop offset="50%" stopColor="#17263b" />
+          <stop offset="100%" stopColor="#dfe7ee" />
+        </linearGradient>
+      </defs>
+
+      <g transform="translate(260, 76)">
+        <circle cx="0" cy="0" r="80" fill="none" stroke="url(#almaniRing)" strokeWidth="18" />
+        <circle cx="0" cy="0" r="58" fill="none" stroke="#20364c" strokeWidth="18" />
+        <circle cx="0" cy="0" r="36" fill="none" stroke="#233d59" strokeWidth="14" />
+
+        <path d="M -12 -80 L 12 -80 L 12 -12 L 80 -12 L 80 12 L 12 12 L 12 80 L -12 80 L -12 12 L -80 12 L -80 -12 L -12 -12 Z" fill="none" stroke="#20364c" strokeWidth="10" strokeLinejoin="round" />
+        <path d="M -80 0 L 80 0 M 0 -80 L 0 80" stroke="#20364c" strokeWidth="10" strokeLinecap="round" />
+      </g>
+
+      <text x="260" y="165" textAnchor="middle" fill="#163452" fontSize="62" fontWeight="700" letterSpacing="4" fontFamily="Arial, Helvetica, sans-serif">ALMANI</text>
+      <text x="260" y="198" textAnchor="middle" fill="#163452" fontSize="24" fontWeight="500" letterSpacing="5" fontFamily="Arial, Helvetica, sans-serif">SIMPLE PROCESS</text>
+    </svg>
+  )
+}
+
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -105,35 +141,89 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
-  <div className="max-w-7xl mx-auto px-4" style={{ textAlign: 'center', position: 'relative', height: '112px', lineHeight: '112px' }}>
-    {/* Centro: Logo da Almani — text-align center + inline-block = bulletproof */}
-    <img
-      src="/almani-logo.png?v=2"
-      alt="Almani - Simple Process"
-      style={{ height: '96px', width: 'auto', display: 'inline-block', verticalAlign: 'middle' }}
-    />
+        <div
+          className="max-w-7xl mx-auto px-4"
+          style={{
+            height: '112px',
+            width: '100%',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(160px, 1fr) auto minmax(220px, 320px)',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          {/* Esquerda: Logo do Cliente (Santander) */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifySelf: 'start',
+              minWidth: 0,
+            }}
+          >
+            <img
+              src="/santander-logo.svg"
+              alt="Logo do Cliente"
+              style={{ height: '64px', width: 'auto', display: 'block' }}
+            />
+          </div>
 
-    {/* Esquerda: Logo do Cliente (Santander) */}
-    <div style={{ position: 'absolute', left: '16px', top: '0', height: '100%', display: 'flex', alignItems: 'center' }}>
-      <img
-        src="/santander-logo.svg"
-        alt="Logo do Cliente"
-        style={{ height: '64px', width: 'auto' }}
-      />
-    </div>
+          {/* Centro: Logo da Almani */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              justifySelf: 'center',
+              minWidth: 0,
+            }}
+          >
+            <AlmaniLogo />
+          </div>
 
-    {/* Direita: Usuário + Sair */}
-    <div style={{ position: 'absolute', right: '16px', top: '0', height: '100%', display: 'flex', alignItems: 'center', gap: '16px' }}>
-      <span style={{ fontSize: '14px', color: '#4b5563' }}>{usuario}</span>
-      <button
-        onClick={sair}
-        style={{ fontSize: '14px', color: '#dc2626', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
-      >
-        Sair
-      </button>
-    </div>
-  </div>
-</header>
+          {/* Direita: Usuário + Sair */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifySelf: 'end',
+              justifyContent: 'flex-end',
+              gap: '16px',
+              minWidth: 0,
+              width: '100%',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+            }}
+          >
+            <span
+              style={{
+                fontSize: '14px',
+                color: '#4b5563',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                display: 'inline-block',
+                maxWidth: '100%',
+              }}
+            >
+              {usuario}
+            </span>
+            <button
+              onClick={sair}
+              style={{
+                fontSize: '14px',
+                color: '#dc2626',
+                fontWeight: 500,
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              Sair
+            </button>
+          </div>
+        </div>
+      </header>
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h2 className="text-2xl font-bold text-gray-800 mb-6">Meus Processos</h2>
         {processos.length === 0 ? (
