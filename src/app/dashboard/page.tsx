@@ -111,10 +111,8 @@ export default function DashboardPage() {
           style={{
             height: '112px',
             width: '100%',
-            display: 'grid',
-            gridTemplateColumns: 'minmax(160px, 1fr) auto minmax(220px, 320px)',
+            display: 'flex',
             alignItems: 'center',
-            gap: '12px',
             position: 'relative',
           }}
         >
@@ -166,11 +164,10 @@ export default function DashboardPage() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              justifySelf: 'end',
               justifyContent: 'flex-end',
               gap: '16px',
               minWidth: 0,
-              width: '100%',
+              marginLeft: 'auto',
               whiteSpace: 'nowrap',
               overflow: 'hidden',
             }}
