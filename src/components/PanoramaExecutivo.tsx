@@ -11,15 +11,15 @@ type Processo = {
 }
 
 const CORES_STATUS: Record<string, string> = {
-  'Em andamento': '#f59e0b',
-  'Em Andamento': '#f59e0b',
-  'Concluído': '#10b981',
-  'Concluido': '#10b981',
-  'Aguardando documento': '#ef4444',
+  'Em andamento': '#b8860b',
+  'Em Andamento': '#b8860b',
+  'Concluído': '#1e3a5f',
+  'Concluido': '#1e3a5f',
+  'Aguardando documento': '#7a1f1f',
   'Pausado': '#6b7280',
 }
 
-const CORES_PALETA = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4', '#ef4444', '#84cc16', '#f97316']
+const CORES_PALETA = ['#0a2540', '#1e3a5f', '#2c5282', '#4a5568', '#718096', '#9ca3af', '#b8860b', '#8a6d3b']
 
 export default function PanoramaExecutivo({ processos }: { processos: Processo[] }) {
   const [aberto, setAberto] = useState(false)
@@ -76,7 +76,7 @@ export default function PanoramaExecutivo({ processos }: { processos: Processo[]
     <>
       <button
         onClick={() => setAberto(true)}
-        className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-colors"
+        className="inline-flex items-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold px-5 py-2.5 rounded-lg shadow-md transition-colors"
       >
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -105,17 +105,17 @@ export default function PanoramaExecutivo({ processos }: { processos: Processo[]
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-              <div className="bg-blue-50 rounded-xl p-4 text-center">
-                <p className="text-3xl font-bold text-blue-700">{dados.total}</p>
-                <p className="text-sm text-blue-600 font-medium">Processos no total</p>
+              <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200">
+                <p className="text-3xl font-bold text-slate-900">{dados.total}</p>
+                <p className="text-sm text-slate-600 font-medium">Processos no total</p>
               </div>
-              <div className="bg-amber-50 rounded-xl p-4 text-center">
-                <p className="text-3xl font-bold text-amber-600">{dados.statusList[0]?.valor ?? 0}</p>
-                <p className="text-sm text-amber-600 font-medium">{dados.statusList[0]?.nome ?? 'Em andamento'}</p>
+              <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200">
+                <p className="text-3xl font-bold" style={{ color: '#b8860b' }}>{dados.statusList[0]?.valor ?? 0}</p>
+                <p className="text-sm text-slate-600 font-medium">{dados.statusList[0]?.nome ?? 'Em andamento'}</p>
               </div>
-              <div className="bg-emerald-50 rounded-xl p-4 text-center">
-                <p className="text-3xl font-bold text-emerald-600">{dados.statusList.find(s => /conclu/i.test(s.nome))?.valor ?? 0}</p>
-                <p className="text-sm text-emerald-600 font-medium">Concluídos</p>
+              <div className="bg-slate-50 rounded-xl p-4 text-center border border-slate-200">
+                <p className="text-3xl font-bold text-slate-900">{dados.statusList.find(s => /conclu/i.test(s.nome))?.valor ?? 0}</p>
+                <p className="text-sm text-slate-600 font-medium">Concluídos</p>
               </div>
             </div>
 
@@ -128,7 +128,7 @@ export default function PanoramaExecutivo({ processos }: { processos: Processo[]
                       <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="12" />
                       <circle
                         cx="50" cy="50" r="45" fill="none"
-                        stroke={CORES_STATUS[dados.statusList[0]?.nome] || '#3b82f6'}
+                        stroke={CORES_STATUS[dados.statusList[0]?.nome] || '#0a2540'}
                         strokeWidth="12"
                         strokeLinecap="round"
                         strokeDasharray={`${(pctPrincipal / 100) * circunferencia} ${circunferencia}`}
@@ -207,8 +207,8 @@ export default function PanoramaExecutivo({ processos }: { processos: Processo[]
                 )}
               </div>
 
-              <div className="bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl p-5 text-white">
-                <h3 className="font-semibold mb-2">💡 Insight</h3>
+              <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-xl p-5 text-white">
+                <h3 className="font-semibold mb-2 text-yellow-400">Insight</h3>
                 <p className="text-sm leading-relaxed">{dados.insight}</p>
               </div>
             </div>
