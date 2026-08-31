@@ -17,6 +17,13 @@ type Processo = {
   acao_necessaria: string | null
   created_at: string
 }
+
+type Cliente = {
+  id: string
+  nome: string
+  logo_url: string | null
+}
+
 const STATUS_CORES: Record<string, string> = {
   'Em andamento': 'bg-yellow-100 text-yellow-800 border-yellow-300',
   'Concluído': 'bg-green-100 text-green-800 border-green-300',
@@ -48,6 +55,7 @@ export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
   const [carregando, setCarregando] = useState(true)
   const [usuario, setUsuario] = useState('')
+  const [cliente, setCliente] = useState<Cliente | null>(null)
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
   const router = useRouter()
   useEffect(() => {
@@ -59,21 +67,30 @@ export default function DashboardPage() {
       }
       const userEmail = session.user.email || ''
       setUsuario(userEmail)
-      const { data: cliente, error: clienteError } = await supabase
+      const { data: clienteData, error: clienteError } = await supabase
         .from('clientes')
-        .select('id')
+        .select('id, nome')
         .eq('email', userEmail)
         .single()
-      if (clienteError || !cliente) {
+      if (clienteError || !clienteData) {
         console.error('Cliente não encontrado para o e-mail:', userEmail)
         setProcessos([])
         setCarregando(false)
         return
       }
+      const { data: logoData } = await supabase
+        .from('clientes')
+        .select('logo_url')
+        .eq('id', clienteData.id)
+        .maybeSingle()
+      setCliente({
+        ...clienteData,
+        logo_url: logoData?.logo_url || null,
+      })
       const { data: processosData, error } = await supabase
         .from('processos')
         .select('*')
-        .eq('cliente_id', cliente.id)
+        .eq('cliente_id', clienteData.id)
         .order('created_at', { ascending: false })
       if (error) {
         console.error('Erro ao carregar processos:', error)
@@ -116,7 +133,7 @@ export default function DashboardPage() {
             position: 'relative',
           }}
         >
-          {/* Esquerda: Logo do Cliente (Santander) */}
+          {/* Esquerda: Logo da empresa */}
           <div
             style={{
               display: 'flex',
@@ -125,11 +142,23 @@ export default function DashboardPage() {
               minWidth: 0,
             }}
           >
-            <img
-              src="/santander-logo.svg"
-              alt="Logo do Cliente"
-              style={{ height: '64px', width: 'auto', display: 'block' }}
-            />
+            {cliente?.logo_url ? (
+              <img
+                src={cliente.logo_url}
+                alt={`Logo da ${cliente.nome}`}
+                style={{
+                  height: '64px',
+                  width: '200px',
+                  display: 'block',
+                  objectFit: 'contain',
+                  objectPosition: 'left center',
+                }}
+              />
+            ) : (
+              <span className="text-lg font-semibold text-gray-700">
+                {cliente?.nome || 'Empresa'}
+              </span>
+            )}
           </div>
 
           {/* Centro: Logo da Almani */}
