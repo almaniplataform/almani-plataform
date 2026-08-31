@@ -3,6 +3,7 @@ import { Fragment, useEffect, useState } from 'react'
 import Image from 'next/image'
 import { supabase } from '../../lib/supabase'
 import { useRouter } from 'next/navigation'
+import AnexosProcesso from '../../components/AnexosProcesso'
 type Processo = {
   id: string
   cliente_id: string
