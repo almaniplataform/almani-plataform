@@ -77,18 +77,40 @@ export default function DashboardPage() {
       }
 
       const userEmail = session.user.email || ''
-      setUsuario(userEmail)
-      const { data: clienteData, error: clienteError } = await supabase
-        .from('clientes')
-        .select('id, nome')
-        .eq('email', userEmail)
-        .single()
-      if (clienteError || !clienteData) {
-        console.error('Cliente não encontrado para o e-mail:', userEmail)
-        setProcessos([])
-        setCarregando(false)
-        return
-      }
+setUsuario(userEmail)
+
+// Buscar o cliente pelo vínculo usuário <-> cliente
+const { data: { user } } = await supabase.auth.getUser()
+if (!user) {
+  router.push('/login')
+  return
+}
+
+const { data: vinculo, error: vinculoError } = await supabase
+  .from('usuarios_cliente')
+  .select('cliente_id')
+  .eq('user_id', user.id)
+  .maybeSingle()
+
+if (vinculoError || !vinculo) {
+  console.error('Vínculo não encontrado para o usuário:', user.id)
+  setProcessos([])
+  setCarregando(false)
+  return
+}
+
+const { data: clienteData, error: clienteError } = await supabase
+  .from('clientes')
+  .select('id, nome')
+  .eq('id', vinculo.cliente_id)
+  .single()
+
+if (clienteError || !clienteData) {
+  console.error('Cliente não encontrado para o vínculo:', vinculo.cliente_id)
+  setProcessos([])
+  setCarregando(false)
+  return
+}
       const { data: logoData } = await supabase
         .from('clientes')
         .select('logo_url')
