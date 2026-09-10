@@ -1,7 +1,9 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { authenticateRequest, canAccessProcess } from '../../../../lib/server-auth'
 
 export async function GET(request: Request) {
+  const result = await authenticateRequest(request)
+  if ('response' in result) return result.response
   const { searchParams } = new URL(request.url)
   const processoId = searchParams.get('processoId')
 
@@ -9,23 +11,21 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'processoId obrigatório' }, { status: 400 })
   }
 
-  const supabaseAdmin = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
+  const processo = await canAccessProcess(result.context.supabase, result.context.user, processoId, result.context.isAdmin)
+  if (!processo) return NextResponse.json({ error: 'Processo não encontrado.' }, { status: 404 })
 
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await result.context.supabase
     .from('anexos')
     .select('*')
     .eq('processo_id', processoId)
     .order('criado_em', { ascending: false })
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Não foi possível carregar os anexos.' }, { status: 500 })
   }
 
   const anexos = await Promise.all((data || []).map(async (anexo) => {
-    const { data: urlData, error: urlError } = await supabaseAdmin
+    const { data: urlData, error: urlError } = await result.context.supabase
       .storage
       .from('anexos-processos')
       .createSignedUrl(anexo.url_arquivo, 60 * 60)
@@ -37,5 +37,5 @@ export async function GET(request: Request) {
     return { ...anexo, url_arquivo: urlData.signedUrl }
   }))
 
-  return NextResponse.json(anexos)
+  return NextResponse.json(anexos, { headers: { 'Cache-Control': 'private, no-store' } })
 }

@@ -1,35 +1,39 @@
-import { createClient } from '@supabase/supabase-js'
 import { NextResponse } from 'next/server'
+import { authenticateRequest, registrarAuditoria, requireAdmin } from '../../../../lib/server-auth'
 
 export async function POST(request: Request) {
   try {
+    const result = await authenticateRequest(request)
+    if ('response' in result) return result.response
+    const adminError = requireAdmin(result.context)
+    if (adminError) return adminError
     const { anexoId } = await request.json()
-
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    if (typeof anexoId !== 'string' || !/^[0-9a-f-]{36}$/i.test(anexoId)) {
+      return NextResponse.json({ error: 'Anexo inválido.' }, { status: 400 })
+    }
 
     // Buscar o anexo para pegar o caminho do arquivo no bucket privado.
-    const { data: anexo } = await supabaseAdmin
+    const { data: anexo } = await result.context.supabase
       .from('anexos')
       .select('url_arquivo')
       .eq('id', anexoId)
       .single()
 
     if (anexo) {
-      await supabaseAdmin.storage.from('anexos-processos').remove([anexo.url_arquivo])
+      await result.context.supabase.storage.from('anexos-processos').remove([anexo.url_arquivo])
     }
 
     // Deletar o registro
-    const { error } = await supabaseAdmin
+    const { error } = await result.context.supabase
       .from('anexos')
       .delete()
       .eq('id', anexoId)
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ error: 'Não foi possível excluir o anexo.' }, { status: 500 })
     }
+
+    await registrarAuditoria(result.context.supabase, result.context.user, 'excluir_anexo', 'anexos', anexoId)
 
     return NextResponse.json({ success: true })
   } catch {

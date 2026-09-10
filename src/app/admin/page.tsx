@@ -51,7 +51,9 @@ export default function AdminPage() {
         router.push('/login')
         return
       }
-      const res = await fetch('/api/processos')
+      const res = await fetch('/api/processos', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
       if (!res.ok) {
         console.error('Erro ao carregar processos')
         setCarregando(false)

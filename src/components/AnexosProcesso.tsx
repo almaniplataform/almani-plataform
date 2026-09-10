@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 
 type Anexo = {
   id: string
@@ -26,7 +27,11 @@ export default function AnexosProcesso({
   const [uploading, setUploading] = useState(false)
 
   async function carregarAnexos() {
-    const res = await fetch(`/api/anexos/listar?processoId=${processoId}`)
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) return
+    const res = await fetch(`/api/anexos/listar?processoId=${processoId}`, {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    })
     if (res.ok) {
       const data = await res.json()
       setAnexos(data)
@@ -36,9 +41,14 @@ export default function AnexosProcesso({
   useEffect(() => {
     let ativo = true
 
-    fetch(`/api/anexos/listar?processoId=${processoId}`)
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => session
+        ? fetch(`/api/anexos/listar?processoId=${processoId}`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        })
+        : null)
       .then(async (res) => {
-        if (!res.ok) return null
+        if (!res || !res.ok) return null
         return res.json() as Promise<Anexo[]>
       })
       .then((data) => {
@@ -56,6 +66,12 @@ export default function AnexosProcesso({
 
     setUploading(true)
 
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session) {
+      setUploading(false)
+      return
+    }
+
     const formData = new FormData()
     formData.append('file', file)
     formData.append('processoId', processoId)
@@ -65,6 +81,7 @@ export default function AnexosProcesso({
     try {
       const res = await fetch('/api/anexos/upload', {
         method: 'POST',
+        headers: { Authorization: `Bearer ${session.access_token}` },
         body: formData,
       })
 
@@ -86,9 +103,14 @@ export default function AnexosProcesso({
     if (!confirm('Excluir este anexo?')) return
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
       const res = await fetch('/api/anexos/deletar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.access_token}`,
+        },
         body: JSON.stringify({ anexoId }),
       })
 

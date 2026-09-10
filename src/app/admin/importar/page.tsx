@@ -142,7 +142,9 @@ export default function AdminImportarPage() {
         return
       }
 
-      const res = await fetch('/api/clientes')
+      const res = await fetch('/api/clientes', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      })
 if (!res.ok) { setMensagem('Erro ao carregar clientes'); return }
 const data = await res.json()
 setClientes(data)
