@@ -59,6 +59,8 @@ export default function DashboardPage() {
   const [usuario, setUsuario] = useState('')
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
+  const [filtroDataInicio, setFiltroDataInicio] = useState('')
+  const [filtroDataFim, setFiltroDataFim] = useState('')
   const router = useRouter()
   useEffect(() => {
     async function carregarDados() {
@@ -159,6 +161,12 @@ if (clienteError || !clienteData) {
     }
     alert('Enviamos um link para alterar sua senha ao seu e-mail.')
   }
+  const processosFiltrados = processos.filter((processo) => {
+    const dataAbertura = (processo.data_abertura || '').substring(0, 10)
+    if (filtroDataInicio && (!dataAbertura || dataAbertura < filtroDataInicio)) return false
+    if (filtroDataFim && (!dataAbertura || dataAbertura > filtroDataFim)) return false
+    return true
+  })
   if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -295,9 +303,64 @@ if (clienteError || !clienteData) {
           <h2 className="text-2xl font-bold text-gray-800">Meus Processos</h2>
           <PanoramaExecutivo processos={processos} />
         </div>
-        {processos.length === 0 ? (
+        <div className="bg-white rounded-lg shadow-md border border-gray-200 px-5 py-3 mb-6 flex flex-wrap items-center gap-x-5 gap-y-2">
+          <div className="flex items-center gap-2 text-gray-700">
+            <svg className="w-4 h-4 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <span className="text-sm font-semibold whitespace-nowrap">Data de Abertura</span>
+          </div>
+          <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+          <div className="flex items-center gap-2">
+            <label htmlFor="filtro-data-inicio" className="text-xs font-medium text-gray-400 whitespace-nowrap">
+              De
+            </label>
+            <input
+              id="filtro-data-inicio"
+              type="date"
+              value={filtroDataInicio}
+              onChange={(e) => setFiltroDataInicio(e.target.value)}
+              className="border-0 bg-gray-50 rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <label htmlFor="filtro-data-fim" className="text-xs font-medium text-gray-400 whitespace-nowrap">
+              Até
+            </label>
+            <input
+              id="filtro-data-fim"
+              type="date"
+              value={filtroDataFim}
+              onChange={(e) => setFiltroDataFim(e.target.value)}
+              className="border-0 bg-gray-50 rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
+            />
+          </div>
+          {(filtroDataInicio || filtroDataFim) && (
+            <>
+              <div className="w-px h-5 bg-gray-200 hidden sm:block" />
+              <span className="text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded px-3 py-1 whitespace-nowrap">
+                {processosFiltrados.length} de {processos.length}
+              </span>
+              <button
+                onClick={() => {
+                  setFiltroDataInicio('')
+                  setFiltroDataFim('')
+                }}
+                className="flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-red-600 hover:bg-red-50 rounded px-3 py-1.5 transition ml-auto whitespace-nowrap"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                Limpar filtro
+              </button>
+            </>
+          )}
+        </div>
+        {processosFiltrados.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
-            Você ainda não possui processos cadastrados.
+            {processos.length === 0
+              ? 'Você ainda não possui processos cadastrados.'
+              : 'Nenhum processo encontrado para o período selecionado.'}
           </div>
         ) : (
           <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
@@ -316,7 +379,7 @@ if (clienteError || !clienteData) {
                   </tr>
                 </thead>
                 <tbody>
-                  {processos.map((processo, index) => (
+                  {processosFiltrados.map((processo, index) => (
                     <Fragment key={processo.id}>
                       <tr
                         className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 cursor-pointer border-b border-gray-200`}
