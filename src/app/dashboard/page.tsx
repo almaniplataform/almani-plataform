@@ -135,7 +135,8 @@ if (clienteError || !clienteData) {
         .from('processos')
         .select('*')
         .eq('cliente_id', clienteData.id)
-        .order('created_at', { ascending: false })
+        .order('data_abertura', { ascending: true })
+        .order('created_at', { ascending: true })
       if (error) {
         console.error('Erro ao carregar processos:', error)
         setCarregando(false)
