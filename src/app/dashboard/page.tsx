@@ -53,6 +53,14 @@ function verificarVencimento(data: string | null, status: string | null): boolea
   const hojeStr = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(hoje.getDate()).padStart(2, '0')}`
   return dataSla < hojeStr
 }
+
+type OrdemStatus = 'nenhuma' | 'abertos-primeiro' | 'concluidos-primeiro'
+
+function statusConcluido(status: string | null): boolean {
+  const statusNormalizado = (status || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return statusNormalizado === 'concluido'
+}
+
 export default function DashboardPage() {
   const [processos, setProcessos] = useState<Processo[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -61,6 +69,7 @@ export default function DashboardPage() {
   const [processoExpandido, setProcessoExpandido] = useState<string | null>(null)
   const [filtroDataInicio, setFiltroDataInicio] = useState('')
   const [filtroDataFim, setFiltroDataFim] = useState('')
+  const [ordemStatus, setOrdemStatus] = useState<OrdemStatus>('nenhuma')
   const router = useRouter()
   useEffect(() => {
     async function carregarDados() {
@@ -132,14 +141,7 @@ if (clienteError || !clienteData) {
         setCarregando(false)
         return
       }
-      const ordenados = [...(processosData || [])].sort((a, b) => {
-        const statusA = (a.status || '').toLowerCase()
-        const statusB = (b.status || '').toLowerCase()
-        if (statusA < statusB) return -1
-        if (statusA > statusB) return 1
-        return 0
-      })
-      setProcessos(ordenados)
+      setProcessos(processosData || [])
       setCarregando(false)
     }
     carregarDados()
@@ -167,6 +169,19 @@ if (clienteError || !clienteData) {
     if (filtroDataFim && (!dataAbertura || dataAbertura > filtroDataFim)) return false
     return true
   })
+  const processosOrdenados = processosFiltrados
+    .map((processo, index) => ({ processo, index }))
+    .sort((a, b) => {
+      if (ordemStatus === 'nenhuma') return a.index - b.index
+
+      const processoAConcluido = statusConcluido(a.processo.status)
+      const processoBConcluido = statusConcluido(b.processo.status)
+      if (processoAConcluido === processoBConcluido) return a.index - b.index
+
+      const concluidoPrimeiro = ordemStatus === 'concluidos-primeiro'
+      return (processoAConcluido ? 1 : -1) * (concluidoPrimeiro ? -1 : 1)
+    })
+    .map(({ processo }) => processo)
   if (carregando) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -356,7 +371,7 @@ if (clienteError || !clienteData) {
             </>
           )}
         </div>
-        {processosFiltrados.length === 0 ? (
+          {processosOrdenados.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center text-gray-500">
             {processos.length === 0
               ? 'Você ainda não possui processos cadastrados.'
@@ -372,14 +387,47 @@ if (clienteError || !clienteData) {
                     <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Placa</th>
                     <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">UF</th>
                     <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Documento</th>
-                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Status</th>
+                    <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setOrdemStatus((ordemAtual) => {
+                          if (ordemAtual === 'nenhuma') return 'abertos-primeiro'
+                          if (ordemAtual === 'abertos-primeiro') return 'concluidos-primeiro'
+                          return 'nenhuma'
+                        })}
+                        className="group relative flex w-full items-center justify-center rounded focus:outline-none focus:ring-2 focus:ring-white hover:text-blue-200"
+                        aria-label={ordemStatus === 'nenhuma'
+                          ? 'Ordenar por status, processos abertos primeiro'
+                          : ordemStatus === 'abertos-primeiro'
+                            ? 'Ordenar por status, processos concluídos primeiro'
+                            : 'Remover ordenação por status'}
+                        title="Ordenar por status"
+                      >
+                        Status
+                        <span
+                          className="absolute right-0 inline-flex h-6 w-6 items-center justify-center rounded-md bg-white/10 ring-1 ring-white/30 transition-colors group-hover:bg-white/20"
+                          aria-hidden="true"
+                        >
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            {ordemStatus === 'abertos-primeiro' && <path d="M12 19V5m0 0-5 5m5-5 5 5" />}
+                            {ordemStatus === 'concluidos-primeiro' && <path d="M12 5v14m0 0-5-5m5 5 5-5" />}
+                            {ordemStatus === 'nenhuma' && (
+                              <>
+                                <path d="m8 9 4-4 4 4" />
+                                <path d="m16 15-4 4-4-4" />
+                              </>
+                            )}
+                          </svg>
+                        </span>
+                      </button>
+                    </th>
                     <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">Data Abertura</th>
                     <th className="px-4 py-3 text-center font-semibold border-r border-gray-600 whitespace-nowrap">SLA Meta</th>
                     <th className="px-4 py-3 text-center font-semibold whitespace-nowrap">Observações</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {processosFiltrados.map((processo, index) => (
+                  {processosOrdenados.map((processo, index) => (
                     <Fragment key={processo.id}>
                       <tr
                         className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 cursor-pointer border-b border-gray-200`}
