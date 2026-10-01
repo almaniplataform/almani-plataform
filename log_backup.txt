@@ -1,7 +1,7 @@
 === INICIO === 
-Hora:  9:42:17,63 
+Hora: 10:27:13,78 
 DEST = C:\Users\aless\OneDrive - ALMAN÷\Backups ALMANI 
 --- Comando 1 (estrutura) --- 
 Initialising login role...
 Dumping schemas from remote database...
-Dumped schema to C:\Users\aless\OneDrive - ALMAN√ç\Backups ALMANI\backup_20260910.sql.
+{"_tag":"Error","error":{"code":"LegacyDockerRunError","message":"failed to inspect docker image: Cannot connect to Podman. Please verify your connection to the Linux system using `podman system connection list`, or try `podman machine init` and `podman machine start` to manage a new Linux VM\nError: unable to connect to Podman socket: failed to connect: dial tcp 127.0.0.1:60855: connectex: No connection could be made because the target machine actively refused it.\n\nDocker Desktop is a prerequisite for local development. Follow the official docs to install: https://docs.docker.com/desktop"}}
